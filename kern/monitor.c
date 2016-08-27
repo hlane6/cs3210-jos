@@ -24,6 +24,7 @@ struct Command {
 static struct Command commands[] = {
   { "help",      "Display this list of commands",        mon_help       },
   { "info-kern", "Display information about the kernel", mon_infokern   },
+  { "backtrace", "Display a backtrace of the stack",     mon_backtrace  },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -59,7 +60,27 @@ mon_infokern(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-  // Your code here.
+    // Your code here.
+    cprintf("Stack Trace:\n");
+
+    uint32_t *frame_pointer = (uint32_t *) read_ebp();
+    uint32_t *parameters;
+
+    while (frame_pointer) {
+        parameters = frame_pointer + 2;
+
+        cprintf("  ebp %x eip %x args %x %x %x %x %x\n",
+                frame_pointer,
+                frame_pointer + 1,
+                *parameters,
+                *(parameters + 1),
+                *(parameters + 2),
+                *(parameters + 3),
+                *(parameters + 4));
+
+        frame_pointer = (uint32_t *) *frame_pointer;
+    }
+
   return 0;
 }
 
@@ -115,7 +136,6 @@ monitor(struct Trapframe *tf)
 
   cprintf("Welcome to the JOS kernel monitor!\n");
   cprintf("Type 'help' for a list of commands.\n");
-
 
   while (1) {
     buf = readline("K> ");
