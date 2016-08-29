@@ -71,7 +71,7 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
         parameters = frame_pointer + 2;
         eip = (uintptr_t) *(frame_pointer + 1);
 
-        int result = debuginfo_eip(eip, &eip_info);
+        debuginfo_eip(eip, &eip_info);
 
         cprintf("  ebp %x eip %x args %x %x %x %x %x\n",
                 frame_pointer,
