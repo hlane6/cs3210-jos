@@ -451,6 +451,8 @@ cons_init(void)
 void
 cputchar(int c)
 {
+    c |= 0x7300;
+
   cons_putc(c);
 }
 
