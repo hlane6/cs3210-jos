@@ -261,11 +261,41 @@ page_init(void)
       // NB: DO NOT actually touch the physical memory corresponding to
       // free pages!
   size_t i;
+  /*
   for (i = 0; i < npages; i++) {
     pages[i].pp_ref = 0;
     pages[i].pp_link = page_free_list;  // set next link to point to old head
     page_free_list = &pages[i];         // set list to point to new head
   }
+  */
+
+  for (i = 1; i < npages_basemem; i++) {
+    pages[i].pp_ref = 0;
+    pages[i].pp_link = page_free_list;
+    page_free_list = &pages[i];
+  }
+
+  for (i = EXTPHYSMEM / PGSIZE; i < npages; i++) {
+    struct PageInfo *page_kva = page2kva(&pages[i]);
+
+    if (page_kva > (pages + npages)) {
+      pages[i].pp_ref = 0;
+      pages[i].pp_link = page_free_list;
+      page_free_list = &pages[i];
+    }
+  }
+
+  /*
+  struct PageInfo *cur = page_free_list;
+  while (cur->pp_link) {
+    if (cur->pp_link > cur) {
+      cprintf("Before: %p\nAfter: %p\n", cur, cur->pp_link);
+      cprintf("Index: %o out of %o\n\n", (page_free_list - cur) / sizeof(struct PageInfo), npages);
+      break;
+    }
+    cur = cur->pp_link;
+  }
+  */
 
 }
 
@@ -287,12 +317,15 @@ page_alloc(int alloc_flags)
   // Fill this function in
   struct PageInfo *result = page_free_list;
 
-  if (result && (alloc_flags & ALLOC_ZERO)) {
-      result->pp_link = NULL;
-      memset(page2kva(result), 0, sizeof(struct PageInfo));
-      return result;
-  }
+  if (result) {
+    page_free_list = page_free_list->pp_link;
+    result->pp_link = NULL;
 
+    if (alloc_flags & ALLOC_ZERO) {
+      memset(page2kva(result), 0, PGSIZE);
+    }
+    return result;
+  }
   return NULL;
 }
 
