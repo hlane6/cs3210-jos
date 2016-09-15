@@ -16,5 +16,19 @@ int mon_help(int argc, char **argv, struct Trapframe *tf);
 int mon_infokern(int argc, char **argv, struct Trapframe *tf);
 int mon_infopg(int argc, char **argv, struct Trapframe *tf);
 int mon_backtrace(int argc, char **argv, struct Trapframe *tf);
+int mon_showmapping(int argc, char **argv, struct Trapframe *tf);
+int mon_perm(int argc, char **argv, struct Trapframe *tf); 
+
+// Enum to deal with perm command
+enum permission_t {
+  W,
+  U,
+  PWT,
+  PCD,
+  A,
+  D,
+  PS,
+  G
+};
 
 #endif  // !JOS_KERN_MONITOR_H

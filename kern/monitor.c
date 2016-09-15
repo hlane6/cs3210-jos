@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE 80 // enough for one VGA text line
 
@@ -25,8 +26,41 @@ static struct Command commands[] = {
   { "help",      "Display this list of commands",        mon_help       },
   { "info-kern", "Display information about the kernel", mon_infokern   },
   { "backtrace", "Display a backtrace of the stack",     mon_backtrace  },
+  {
+    "showmapping",
+    "Display physical mapping information for range of virtual address",
+    mon_showmapping
+  },
+  {
+    "perm",
+    "Set, clear, or change permision for a page mapped at a given virtual address",
+    mon_perm
+  },
 };
+
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
+
+const char perm_strs[][9] = {
+  "PTE_W",
+  "PTE_U",
+  "PTE_PWT",
+  "PTE_PCD",
+  "PTE_A",
+  "PTE_D",
+  "PTE_PS",
+  "PTE_G"
+};
+
+static int permissions[] = {
+  PTE_W,
+  PTE_U,
+  PTE_PWT,
+  PTE_PCD,
+  PTE_A,
+  PTE_D,
+  PTE_PS,
+  PTE_G
+};
 
 /***** Implementations of basic kernel monitor commands *****/
 
@@ -95,8 +129,94 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
   return 0;
 }
 
+int
+mon_showmapping(int argc, char **argv, struct Trapframe *tf)
+{
+  if (argc < 3) {
+    cprintf("Usage: showmapping [start address] [end address]\n");
+    return 0;
+  }
+
+  char *start, *end;
+
+  start = (char *) ROUNDDOWN(strtol(argv[1], NULL, 16), PGSIZE);
+  end = (char *) ROUNDDOWN(strtol(argv[2], NULL, 16), PGSIZE);
+
+  if ((uintptr_t) start < KERNBASE || (uintptr_t) end < KERNBASE) {
+    cprintf("Valid virtual addresses are required\n");
+    return 0;
+  }
+
+  cprintf("va \t\t pa \t\t perm\n");
+
+  for (char *cur = start; cur <= end; cur += PGSIZE) {
+    pte_t *page_entry = pgdir_walk(kern_pgdir, cur, 0);
+    cprintf("%08p \t %08p \t %08p\n", cur, *page_entry, PGOFF(*page_entry));
+  }
+
+  return 0;
+}
+
+int
+mon_perm(int argc, char **argv, struct Trapframe *tf)
+{
+  if (argc < 3) {
+    cprintf("Usage: perm [virtual address] [ s [perm] | r ]\n");
+    return 0;
+  }
+
+  char *command, *addr;
+  pte_t *pagetable_entry;
+  int perm, i, j;
+
+  command = argv[2];
+  addr = (char *) strtol(argv[1], NULL, 16);
+  perm = PTE_P;
+
+  if ((uintptr_t) addr < KERNBASE) {
+    cprintf("Valid virtual addresses are required\n");
+    return 0;
+  }
+
+  switch (*command) {
+    case 's':
+      if (argc < 4) {
+        cprintf("Need to specify what permissions to use\n");
+        return 0;
+      }
 
 
+      for (i = 3; i < argc; i++) {
+        for (j = 0; j < PGFLAG; j++) {
+          if (!strcmp(perm_strs[j], argv[i])) {
+            perm |= permissions[j];
+          }
+        }
+      }
+
+
+      //perm |= strtol(argv[3], NULL, 16);
+
+      if ( (pagetable_entry = pgdir_walk(kern_pgdir, addr, 0)) ) {
+        *pagetable_entry = PTE_ADDR(*pagetable_entry) | perm;
+        cprintf("Permissions successfully changed to %p\n", perm);
+      } else {
+        cprintf("Page not mapped, could not change permissions\n");
+      }
+      break;
+
+    case 'r':
+      if ( (pagetable_entry = pgdir_walk(kern_pgdir, addr, 0)) ) {
+        *pagetable_entry = PTE_ADDR(*pagetable_entry) | perm;
+        cprintf("Permissions successfully removed\n");
+      } else {
+        cprintf("Page not mapped, could not change permissions\n");
+      }
+      break;
+  }
+
+  return 0;
+}
 /***** Kernel monitor command interpreter *****/
 
 #define WHITESPACE "\t\r\n "
