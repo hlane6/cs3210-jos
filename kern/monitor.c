@@ -36,30 +36,30 @@ static struct Command commands[] = {
     "Set, clear, or change permision for a page mapped at a given virtual address",
     mon_perm
   },
+  {
+    "dump",
+    "Dump contents of memory for a given range of virtual addresses",
+    mon_dump
+  }
 };
 
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
-const char perm_strs[][9] = {
-  "PTE_W",
-  "PTE_U",
-  "PTE_PWT",
-  "PTE_PCD",
-  "PTE_A",
-  "PTE_D",
-  "PTE_PS",
-  "PTE_G"
+struct Perm {
+  const char *name;
+  const char *desc;
+  int value;
 };
 
-static int permissions[] = {
-  PTE_W,
-  PTE_U,
-  PTE_PWT,
-  PTE_PCD,
-  PTE_A,
-  PTE_D,
-  PTE_PS,
-  PTE_G
+static struct Perm permissions[] = {
+  { "PTE_W",    "Write",          PTE_W   },
+  { "PTE_U",    "User",           PTE_U   },
+  { "PTE_PWT",  "Write-Through",  PTE_PWT },
+  { "PTE_PCD",  "Cache-Disable",  PTE_PCD },
+  { "PTE_A",    "Accessed",       PTE_A   },
+  { "PTE_D",    "Dirty",          PTE_D   },
+  { "PTE_PS",   "Page Size",      PTE_PS  },
+  { "PTE_G",    "Global",         PTE_G   }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -151,7 +151,9 @@ mon_showmapping(int argc, char **argv, struct Trapframe *tf)
 
   for (char *cur = start; cur <= end; cur += PGSIZE) {
     pte_t *page_entry = pgdir_walk(kern_pgdir, cur, 0);
-    cprintf("%08p \t %08p \t %08p\n", cur, *page_entry, PGOFF(*page_entry));
+    if (*page_entry & PTE_P) {
+      cprintf("%08p \t %08p \t %08p\n", cur, page_entry, PGOFF(page_entry));
+    }
   }
 
   return 0;
@@ -185,17 +187,10 @@ mon_perm(int argc, char **argv, struct Trapframe *tf)
         return 0;
       }
 
-
-      for (i = 3; i < argc; i++) {
-        for (j = 0; j < PGFLAG; j++) {
-          if (!strcmp(perm_strs[j], argv[i])) {
-            perm |= permissions[j];
-          }
-        }
-      }
-
-
-      //perm |= strtol(argv[3], NULL, 16);
+      for (i = 3; i < argc; i++)
+        for (j = 0; j < PGFLAG; j++)
+          if (!strcmp(permissions[j].name, argv[i]))
+            perm |= permissions[j].value;
 
       if ( (pagetable_entry = pgdir_walk(kern_pgdir, addr, 0)) ) {
         *pagetable_entry = PTE_ADDR(*pagetable_entry) | perm;
@@ -217,6 +212,36 @@ mon_perm(int argc, char **argv, struct Trapframe *tf)
 
   return 0;
 }
+
+int
+mon_dump(int argc, char **argv, struct Trapframe *tf)
+{
+  if (argc < 3) {
+    cprintf("Usage: dump [start address] [end address]\n");
+    return 0;
+  }
+
+  char *start, *end, phys;
+
+  start = (char *) strtol(argv[1], NULL, 16);
+  end = (char *) strtol(argv[2], NULL, 16);
+  phys = 0;
+
+  if ((uintptr_t) start < KERNBASE && (uintptr_t) end < KERNBASE) {
+    phys = 1;
+    start = KADDR((physaddr_t) start);
+    end = KADDR((physaddr_t) end); 
+  }
+
+  cprintf("%s Address\t\tValue\n", (phys) ? "Physical" : "Virtual");
+
+  for ( ; start < end; start++) {
+    cprintf("%p: \t\t\t%p\n", (phys) ? PADDR(start) : (uintptr_t) start, *start);
+  }
+
+  return 0;
+}
+
 /***** Kernel monitor command interpreter *****/
 
 #define WHITESPACE "\t\r\n "
