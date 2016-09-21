@@ -138,7 +138,7 @@ mon_showmapping(int argc, char **argv, struct Trapframe *tf)
     return 0;
   }
 
-  char *start, *end;
+  char *start, *end, *cur;
 
   start = (char *) ROUNDDOWN(strtol(argv[1], NULL, 16), PGSIZE);
   end = (char *) ROUNDDOWN(strtol(argv[2], NULL, 16), PGSIZE);
@@ -150,7 +150,7 @@ mon_showmapping(int argc, char **argv, struct Trapframe *tf)
 
   cprintf("va \t\t pa \t\t perm\n");
 
-  for (char *cur = start; cur <= end; cur += PGSIZE) {
+  for (cur = start; cur <= end; cur += PGSIZE) {
     pte_t *page_entry = pgdir_walk(kern_pgdir, cur, 0);
     if (*page_entry & PTE_P) {
       cprintf("%08p \t %08p \t %08p\n", cur, page_entry, PGOFF(page_entry));

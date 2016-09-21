@@ -439,7 +439,9 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
   // Fill this function in
   pte_t *current_pagetable;
 
-  for (size_t i = 0; i < size; i++) {
+  size_t i;
+
+  for (i = 0; i < size; i++) {
     if ( (current_pagetable = pgdir_walk(pgdir, (void *) (va + i), 1)) ) {
       *current_pagetable = (pa + i) | perm | PTE_P;
     }

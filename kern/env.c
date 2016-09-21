@@ -116,6 +116,14 @@ env_init(void)
 {
   // Set up envs array
   // LAB 3: Your code here.
+  int i;
+
+  for ( i = NENV - 1; i >= 0; i--) {
+    envs[i].env_status = ENV_FREE;
+    envs[i].env_id = 0;
+    envs[i].env_link = env_free_list;
+    env_free_list = &envs[i];
+  }
 
   // Per-CPU part of the initialization
   env_init_percpu();
@@ -180,6 +188,8 @@ env_setup_vm(struct Env *e)
   //    - The functions in kern/pmap.h are handy.
 
   // LAB 3: Your code here.
+  e->env_pgdir = (pde_t *) page2kva(p);
+  (p->pp_ref)++;
 
   // UVPT maps the env's own page table read-only.
   // Permissions: kernel R, user R
@@ -322,6 +332,30 @@ load_icode(struct Env *e, uint8_t *binary)
   //  What?  (See env_run() and env_pop_tf() below.)
 
   // LAB 3: Your code here.
+  struct Elf *elf;
+  struct Proghdr *ph, *ph_start;
+  struct PageInfo *page;
+  uint32_t i;
+  void *ph_va;
+  uint32_t ph_size;
+
+  elf = (struct Elf *) binary;
+
+  if (elf->e_magic != ELF_MAGIC) {
+    panic("Incorrect elf header");
+  }
+
+  ph_start = (struct Proghdr *) ((char *) elf + elf->e_phoff);
+
+  for (i = 0; i < elf->e_phnum; i++) {
+    ph = &ph_start[i];
+
+    if (ph->p_type == ELF_PROG_LOAD) {
+      ph_va = (void *) (ph->p_va);
+      ph_size = ph->p_memsz;
+    }
+
+  }
 
   // Now map one page for the program's initial stack
   // at virtual address USTACKTOP - PGSIZE.
