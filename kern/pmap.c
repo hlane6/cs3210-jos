@@ -289,6 +289,7 @@ page_init(void)
       // NB: DO NOT actually touch the physical memory corresponding to
       // free pages!
   size_t i;
+  struct PageInfo *page_kva, *nextfree;
 
   // Handle base memory after PGSIZE
   for (i = 1; i < npages_basemem; i++) {
@@ -297,12 +298,14 @@ page_init(void)
     page_free_list = &pages[i];
   }
 
-  // Handle rest of extended memory
-  // Skip where the kernel is -- kva < pages
-  for (i = EXTPHYSMEM / PGSIZE; i < npages; i++) {
-    struct PageInfo *page_kva = page2kva(&pages[i]);
+  nextfree = boot_alloc(0);
 
-    if (page_kva > (pages + npages)) {
+  // Handle rest of extended memory
+  // Skip where the kernel is -- kva < boot_alloc(0)
+  for (i = EXTPHYSMEM / PGSIZE; i < npages; i++) {
+    page_kva = page2kva(&pages[i]);
+
+    if (page_kva > nextfree) {
       pages[i].pp_ref = 0;
       pages[i].pp_link = page_free_list;
       page_free_list = &pages[i];
@@ -441,7 +444,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 
   size_t i;
 
-  for (i = 0; i < size; i++) {
+  for (i = 0; i < size; i += PGSIZE) {
     if ( (current_pagetable = pgdir_walk(pgdir, (void *) (va + i), 1)) ) {
       *current_pagetable = (pa + i) | perm | PTE_P;
     }
