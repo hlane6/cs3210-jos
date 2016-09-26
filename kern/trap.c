@@ -66,6 +66,7 @@ trap_init(void)
 
 
   // LAB 3: Your code here.
+  int i;
 
   // Per-CPU setup
   trap_init_percpu();

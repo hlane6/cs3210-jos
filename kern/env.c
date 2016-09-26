@@ -288,9 +288,8 @@ region_alloc(struct Env *e, void *va, size_t len)
   end = ROUNDUP((uintptr_t) (va + len), PGSIZE);
 
   for ( ; start < end; start += PGSIZE) {
-    if ( (page = page_alloc(0)) ) {
-      page_insert(e->env_pgdir, page, (void *) start, PTE_P | PTE_U | PTE_W);
-    } else {
+    if ( !(page = page_alloc(0))  ||
+        (page_insert(e->env_pgdir, page, (void *) start, PTE_P | PTE_U | PTE_W)) ) {
       panic("Region alloc failed allocation attempt");
     }
   }
@@ -383,9 +382,11 @@ load_icode(struct Env *e, uint8_t *binary)
 
     // otherwise copy p_filesz bytes from
     // binary + ph->p_offset to ph_va
-    region_alloc(e, ph_va, ph_size);
-    for (i = 0; i < ph->p_filesz; i++) {
-      *(ph_va + i) = *((char *)(binary) + ph->p_offset + i);
+    if (ph->p_type == ELF_PROG_LOAD) {
+      region_alloc(e, ph_va, ph_size);
+      for (i = 0; i < ph->p_filesz; i++) {
+        *(ph_va + i) = *((char *)(binary) + ph->p_offset + i);
+      }
     }
 
     // remaining bytes should be set to 0
@@ -549,7 +550,6 @@ env_run(struct Env *e)
     lcr3(PADDR(curenv->env_pgdir));
   } 
 
-  cprintf("env_tf address: %p\n", &(e->env_tf));
   env_pop_tf(&(e->env_tf));
 }
 
