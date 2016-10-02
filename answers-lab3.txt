@@ -1,0 +1,14 @@
+Harry Lane
+Lab 3 Answers
+
+1.)
+
+2.)
+
+3.)
+Since this breakpoint is called using the int
+instruction, you ahve to set the privelege 
+level to 3 so that users can call int and it
+be mapped to the breakpoint trap number.
+
+4.)
