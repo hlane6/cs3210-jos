@@ -191,18 +191,10 @@ env_setup_vm(struct Env *e)
   e->env_pgdir = (pde_t *) page2kva(p);
   (p->pp_ref)++;
 
-  // pgdir below UTOP is empty
-  /*
-  for (i = 0; i < PDX(UTOP); i++) {
-    e->env_pgdir[i] = 0;
-  }
-
   // pgdir above UTOP is just like kern_pgdir
   for (i = PDX(UTOP); i < NPDENTRIES; i++) {
     e->env_pgdir[i] = kern_pgdir[i];
   }
-  */
-  memmove(e->env_pgdir, kern_pgdir, PGSIZE);
 
   // UVPT maps the env's own page table read-only.
   // Permissions: kernel R, user R
@@ -263,6 +255,19 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
   e->env_tf.tf_esp = USTACKTOP;
   e->env_tf.tf_cs = GD_UT | 3;
   // You will set e->env_tf.tf_eip later.
+  //
+  e->env_tf.tf_regs.reg_edi = 0x1;
+  e->env_tf.tf_regs.reg_esi = 0x2;
+  e->env_tf.tf_regs.reg_ebp = 0x3;
+  e->env_tf.tf_regs.reg_ebx = 0x4;
+  e->env_tf.tf_regs.reg_edx = 0x5;
+  e->env_tf.tf_regs.reg_ecx = 0x6;
+  e->env_tf.tf_regs.reg_eax = 0x7;
+
+  e->env_tf.tf_padding1 = 0xbeef;
+  e->env_tf.tf_padding2 = 0xabcd;
+  e->env_tf.tf_padding3 = 0xbaad;
+  e->env_tf.tf_padding4 = 0xfedc;
 
   // commit the allocation
   env_free_list = e->env_link;
@@ -544,6 +549,19 @@ env_run(struct Env *e)
   //	e->env_tf to sensible values.
 
   // LAB 3: Your code here.
+
+  /*
+  if (curenv && curenv->env_status == ENV_RUNNING) {
+    curenv->env_status = ENV_RUNNABLE;
+  }
+
+  curenv = e;
+  curenv->env_status = ENV_RUNNING;
+  (curenv->env_runs)++;
+  lcr3(PADDR(curenv->env_pgdir));
+  */
+
+
   if (curenv != e) {
     if (curenv && curenv->env_status == ENV_RUNNING) {
       curenv->env_status = ENV_RUNNABLE;

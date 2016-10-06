@@ -608,6 +608,19 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
   // LAB 3: Your code here.
 
+  /* Exercise 9
+  void *addr;
+  pte_t *pagetable_entry;
+
+  for (addr = ROUNDDOWN(va, PGSIZE); i < (ROUNDUP(va + len, PGSIZE));addr += PGSIZE) {
+    pagetable_entry = pgdir_walk(env, addr, 0);
+    if ( !(*pagetable_entry < ULIM) || !(*pagetable_entry & perm) ) {
+      user_mem_check_addr = (uintptr_t) addr;
+      return -E_FAULT;
+    }
+  }
+  */
+
   return 0;
 }
 
