@@ -256,18 +256,6 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
   e->env_tf.tf_cs = GD_UT | 3;
   // You will set e->env_tf.tf_eip later.
   //
-  e->env_tf.tf_regs.reg_edi = 0x1;
-  e->env_tf.tf_regs.reg_esi = 0x2;
-  e->env_tf.tf_regs.reg_ebp = 0x3;
-  e->env_tf.tf_regs.reg_ebx = 0x4;
-  e->env_tf.tf_regs.reg_edx = 0x5;
-  e->env_tf.tf_regs.reg_ecx = 0x6;
-  e->env_tf.tf_regs.reg_eax = 0x7;
-
-  e->env_tf.tf_padding1 = 0xbeef;
-  e->env_tf.tf_padding2 = 0xabcd;
-  e->env_tf.tf_padding3 = 0xbaad;
-  e->env_tf.tf_padding4 = 0xfedc;
 
   // commit the allocation
   env_free_list = e->env_link;
