@@ -13,6 +13,9 @@
 #include <kern/trap.h>
 #include <kern/pmap.h>
 
+/* lab 3 challenge */
+#include <kern/env.h>
+
 #define CMDBUF_SIZE 80 // enough for one VGA text line
 
 
@@ -41,6 +44,11 @@ static struct Command commands[] = {
     "dump",
     "Dump contents of memory for a given range of virtual addresses",
     mon_dump
+  },
+  {
+    "step",
+    "Single step through the last running environment",
+    mon_step
   }
 };
 
@@ -238,6 +246,19 @@ mon_dump(int argc, char **argv, struct Trapframe *tf)
 
   for ( ; start < end; start++) {
     cprintf("%p: \t\t\t%p\n", (phys) ? PADDR(start) : (uintptr_t) start, *start);
+  }
+
+  return 0;
+}
+
+int
+mon_step(int argc, char **argv, struct Trapframe *tf)
+{
+  if (tf) {
+    tf->tf_eflags = tf->tf_eflags | (1 << 8);
+    env_pop_tf(tf);
+  } else {
+    cprintf("Invalid step: did not come from a user environment\n");
   }
 
   return 0;

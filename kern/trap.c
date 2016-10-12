@@ -191,6 +191,9 @@ trap_dispatch(struct Trapframe *tf)
     case T_BRKPT:
       monitor(tf);
       return;
+    case T_DEBUG:
+      monitor(tf);
+      return;
     case T_SYSCALL:
       tf->tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax,
           tf->tf_regs.reg_edx,
@@ -264,6 +267,7 @@ page_fault_handler(struct Trapframe *tf)
   // LAB 3: Your code here.
 
   if ((tf->tf_cs & 3) < 2) {
+    print_trapframe(tf);
     panic("page_fault_handler: kernel had a page fault");
   }
 
