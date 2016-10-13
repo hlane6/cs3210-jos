@@ -339,12 +339,17 @@ page_init(void)
       // free pages!
   size_t i;
   struct PageInfo *page_kva, *nextfree;
+  physaddr_t page_pa;
 
   // Handle base memory after PGSIZE
   for (i = 1; i < npages_basemem; i++) {
-    pages[i].pp_ref = 0;
-    pages[i].pp_link = page_free_list;
-    page_free_list = &pages[i];
+    page_pa = page2pa(&pages[i]);
+
+    if (page_pa != MPENTRY_PADDR) {
+      pages[i].pp_ref = 0;
+      pages[i].pp_link = page_free_list;
+      page_free_list = &pages[i];
+    }
   }
 
   nextfree = boot_alloc(0);
@@ -354,7 +359,7 @@ page_init(void)
   for (i = EXTPHYSMEM / PGSIZE; i < npages; i++) {
     page_kva = page2kva(&pages[i]);
 
-    if (page_kva > nextfree) {
+    if ( (page_kva > nextfree) ) {
       pages[i].pp_ref = 0;
       pages[i].pp_link = page_free_list;
       page_free_list = &pages[i];
@@ -649,7 +654,22 @@ mmio_map_region(physaddr_t pa, size_t size)
   // Hint: The staff solution uses boot_map_region.
   //
   // Your code here:
-  panic("mmio_map_region not implemented");
+
+  if (base + size >=  MMIOLIM) {
+    panic("mmio_map_region: attempting to map memory past MMIOLIM");
+  }
+
+  void *result;
+
+  boot_map_region(kern_pgdir,
+      base,
+      size,
+      pa,
+      (PTE_PCD | PTE_PWT | PTE_W | PTE_P));
+  
+  result = (void *) base;
+  base = ROUNDUP(base + size, PGSIZE);
+  return result;
 }
 
 static uintptr_t user_mem_check_addr;
