@@ -1,0 +1,43 @@
+Harry Lane
+Lab 3 Answers
+
+1.)
+An individual trap handler allows each interrupt
+to be distinct. If every interrupt had the same
+handler, they would all look the same when coming
+in to the kernel.
+
+2.)
+You have to make the pagefault vector require
+privelege 0 so that only the kernel can access
+it. If a user tries to invoke it, it should just
+be a general fault saying that a user can't do
+that. Otherwise, a user could invoke the kernel's
+page fault handler and pass in some malicious 
+value into kernel code that could do bad things
+inside the kernel.
+
+3.)
+Since this breakpoint is called using the int
+instruction, you have to set the privelege 
+level to 3 so that users can call int and it
+be mapped to the breakpoint trap number.
+
+4.)
+So that user programs don't have access to all
+traps and would be able to access certain parts
+of the kernel that we may not want them to have
+access to. It's simply another level of protection
+from user environments.
+
+Challenge
+=========
+I implemented a step monitor command. It allows you
+to step through a user enivornment, by setting the 
+cpu into single step mode when going back into the
+user enivornment. The cpu just execute a single
+intruction and then put a trap instruction so that
+it goes back into the kernel code again. There is
+also a continue instruction that allows you to 
+resume execution after you've stepped through what
+you want.
