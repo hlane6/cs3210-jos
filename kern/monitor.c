@@ -49,6 +49,11 @@ static struct Command commands[] = {
     "step",
     "Single step through the last running environment",
     mon_step
+  },
+  {
+    "continue",
+    "Continue exectution from a currently paused environment",
+    mon_continue
   }
 };
 
@@ -261,6 +266,18 @@ mon_step(int argc, char **argv, struct Trapframe *tf)
     cprintf("Invalid step: did not come from a user environment\n");
   }
 
+  return 0;
+}
+
+int
+mon_continue(int argc, char **argv, struct Trapframe *tf)
+{
+  if (tf) {
+    tf->tf_eflags = tf->tf_eflags & ~(1 << 8);
+    env_pop_tf(tf);
+  } else {
+    cprintf("Error: no currently running environment\n");
+  }
   return 0;
 }
 

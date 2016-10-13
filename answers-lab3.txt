@@ -2,6 +2,10 @@ Harry Lane
 Lab 3 Answers
 
 1.)
+An individual trap handler allows each interrupt
+to be distinct. If every interrupt had the same
+handler, they would all look the same when coming
+in to the kernel.
 
 2.)
 You have to make the pagefault vector require
@@ -33,4 +37,7 @@ to step through a user enivornment, by setting the
 cpu into single step mode when going back into the
 user enivornment. The cpu just execute a single
 intruction and then put a trap instruction so that
-it goes back into the kernel code again.
+it goes back into the kernel code again. There is
+also a continue instruction that allows you to 
+resume execution after you've stepped through what
+you want.
