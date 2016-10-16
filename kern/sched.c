@@ -12,6 +12,7 @@ void
 sched_yield(void)
 {
   struct Env *idle;
+  uint32_t count, env_index = 0;
 
         // Implement simple round-robin scheduling.
         //
@@ -29,21 +30,17 @@ sched_yield(void)
         // below to halt the cpu.
 
   // LAB 4: Your code here.
-  uint32_t i = 0;
+  
   idle = NULL;
 
   if (thiscpu->cpu_env) {
-    i = ENVX(thiscpu->cpu_env->env_id) + 1;
+    env_index = (ENVX(thiscpu->cpu_env->env_id) + 1) % NENV;
   }
 
-  // check if env id was last in array
-  if (i >= NENV) {
-    i = 0;
-  }
-
-  for ( ; i < NENV; i++) {
-    if (envs[i].env_status == ENV_RUNNABLE) {
-      env_run(&envs[i]);
+  for (count = 0; count < NENV; count++) {
+    env_index = (env_index + 1) % NENV;
+    if (envs[env_index].env_status == ENV_RUNNABLE) {
+      env_run(&envs[env_index]);
     }
   }
 
