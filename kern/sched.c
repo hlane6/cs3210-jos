@@ -29,6 +29,28 @@ sched_yield(void)
         // below to halt the cpu.
 
   // LAB 4: Your code here.
+  uint32_t i = 0;
+  idle = NULL;
+
+  if (thiscpu->cpu_env) {
+    i = ENVX(thiscpu->cpu_env->env_id) + 1;
+  }
+
+  // check if env id was last in array
+  if (i >= NENV) {
+    i = 0;
+  }
+
+  for ( ; i < NENV; i++) {
+    if (envs[i].env_status == ENV_RUNNABLE) {
+      env_run(&envs[i]);
+    }
+  }
+
+  // No suitable Env found, so check if current is still running
+  if (curenv && curenv->env_status == ENV_RUNNING) {
+    env_run(curenv);
+  }
 
   // sched_halt never returns
   sched_halt();
