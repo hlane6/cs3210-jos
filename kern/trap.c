@@ -14,6 +14,9 @@
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
 
+// Lab 4
+#include <inc/string.h>
+
 static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -331,7 +334,6 @@ page_fault_handler(struct Trapframe *tf)
   // Handle kernel-mode page faults.
 
   // LAB 3: Your code here.
-
   if ((tf->tf_cs & 3) < 2) {
     print_trapframe(tf);
     panic("page_fault_handler: kernel had a page fault");
@@ -369,6 +371,35 @@ page_fault_handler(struct Trapframe *tf)
   //   (the 'tf' variable points at 'curenv->env_tf').
 
   // LAB 4: Your code here.
+  if (curenv->env_pgfault_upcall) {
+    void *stack;
+
+    struct UTrapframe user_trapframe;
+    user_trapframe.utf_fault_va = fault_va;
+    user_trapframe.utf_err = tf->tf_err;
+    user_trapframe.utf_regs = tf->tf_regs;
+    user_trapframe.utf_eip = tf->tf_eip;
+    user_trapframe.utf_eflags = tf->tf_eflags;
+    user_trapframe.utf_esp = tf->tf_esp;
+
+    if ( (UXSTACKTOP - PGSIZE <= tf->tf_esp) &&
+        (tf->tf_esp < UXSTACKTOP)) {
+      stack = ((void *) (tf->tf_esp - sizeof(struct UTrapframe))) - 1;
+    } else {
+      stack = (void *) (UXSTACKTOP - sizeof(struct UTrapframe));
+    }
+
+    user_mem_assert(curenv,
+        stack,
+        sizeof(struct UTrapframe),
+        (PTE_P | PTE_W | PTE_U));
+
+    memmove(stack, &user_trapframe, sizeof(struct UTrapframe));
+    curenv->env_tf.tf_eip = (uintptr_t) (curenv->env_pgfault_upcall);
+    curenv->env_tf.tf_esp = (uintptr_t) stack;
+
+    env_run(curenv);
+  }
 
   // Destroy the environment that caused the fault.
   cprintf("[%08x] user fault va %08x ip %08x\n",

@@ -80,3 +80,4 @@ _pgfault_upcall:
 
 	// Return to re-execute the instruction that faulted.
 	// LAB 4: Your code here.
+  ret
