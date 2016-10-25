@@ -2,9 +2,19 @@ Harry Lane
 Lab 4
 
 1.)
+Not necessary to disable A20 in mpentry.
+mpentry also has to use MPADDRPHYS because it will link the
+address at the wrong place since it thinks it is where the boot
+loader goes but it actually somewhere else
 
 2.)
 
 3.)
+Since e is in the kernel space, and every process has the same
+mappings for the kernel space, every page directory will map 
+to the same physical address for the variables in kernel space.
 
 4.)
+It's saved in the traphandler when the stack is made to look like
+a trapframe. Then when env_run happens, the trapframe values are 
+used to restore the environments registers.
