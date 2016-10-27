@@ -715,10 +715,13 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
   cur = (void *) ROUNDDOWN(va, PGSIZE);
   end = (void *) va + len;
 
+  cprintf("va: %p\n", va);
+
   for ( ; cur < end; cur += PGSIZE) {
     pagetable_entry = pgdir_walk(env->env_pgdir, cur, 0);
 
     if ( ((uintptr_t) (va) >= ULIM) ||
+        !(pagetable_entry) ||
         !(((uintptr_t) *pagetable_entry) & (perm | PTE_P)) ) {
       user_mem_check_addr = (uintptr_t) ((cur <=  va) ? va : cur);
       return -E_FAULT;

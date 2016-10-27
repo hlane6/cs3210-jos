@@ -187,7 +187,8 @@ sys_page_alloc(envid_t envid, void *va, int perm)
   struct PageInfo *page;
   struct Env *env;
 
-  if (((uintptr_t) (va) % PGSIZE != 0) ||                             // va not page aligned
+  if (((uintptr_t) (va) >= UTOP) ||
+      ((uintptr_t) (va) % PGSIZE != 0) ||                             // va not page aligned
       !(perm & (PTE_P | PTE_U)) ||                      // perm doesn't have PTE_U | PTE_P
       (perm & ~(PTE_P | PTE_U | PTE_AVAIL | PTE_W))) {  // perm has stuff other than PTE_P | PTE_U | PTE_AVAIL | PTE_W
     return -E_INVAL;
@@ -202,9 +203,10 @@ sys_page_alloc(envid_t envid, void *va, int perm)
       page_free(page);
       return error;
     }
+    return 0;
   }
 
-  return 0;
+  return -E_NO_MEM;
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space

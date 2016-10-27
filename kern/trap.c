@@ -375,9 +375,9 @@ page_fault_handler(struct Trapframe *tf)
     void *stack;
     struct UTrapframe *user_trapframe;
 
-    if ( (UXSTACKTOP - PGSIZE <= tf->tf_esp) &&
+    if ( (UXSTACKTOP - PGSIZE <= (tf->tf_esp - sizeof(struct UTrapframe) - 4)) &&
         (tf->tf_esp < UXSTACKTOP)) {
-      stack = ((void *) (tf->tf_esp - sizeof(struct UTrapframe))) - 1;
+      stack = (void *) (tf->tf_esp - sizeof(struct UTrapframe) - 4);
     } else {
       stack = (void *) (UXSTACKTOP - sizeof(struct UTrapframe));
     }
@@ -389,7 +389,6 @@ page_fault_handler(struct Trapframe *tf)
 
     user_trapframe = (struct UTrapframe *) stack;
 
-    cprintf("fault_va: %p\n", fault_va);
     user_trapframe->utf_fault_va = fault_va;
     user_trapframe->utf_err = tf->tf_err;
     user_trapframe->utf_regs = tf->tf_regs;

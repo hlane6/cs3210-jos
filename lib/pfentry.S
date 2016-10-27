@@ -66,7 +66,7 @@ _pgfault_upcall:
 	//
 	// LAB 4: Your code here.
 
-  //movl %esp, %ecx       // save original exception stack
+  movl %esp, %ebx       // save original exception stack
 
   //movl %esp, %eax
   //addl 40, %eax         // make stack point to trap-time eip 
@@ -77,7 +77,6 @@ _pgfault_upcall:
 
   //pushl %eax            // push trap-time eip to trap-time stack
 
-  movl %esp, %ebx
   movl 40(%esp), %eax
   movl 48(%esp), %esp
   pushl %eax
