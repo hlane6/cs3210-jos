@@ -373,14 +373,7 @@ page_fault_handler(struct Trapframe *tf)
   // LAB 4: Your code here.
   if (curenv->env_pgfault_upcall) {
     void *stack;
-
-    struct UTrapframe user_trapframe;
-    user_trapframe.utf_fault_va = fault_va;
-    user_trapframe.utf_err = tf->tf_err;
-    user_trapframe.utf_regs = tf->tf_regs;
-    user_trapframe.utf_eip = tf->tf_eip;
-    user_trapframe.utf_eflags = tf->tf_eflags;
-    user_trapframe.utf_esp = tf->tf_esp;
+    struct UTrapframe *user_trapframe;
 
     if ( (UXSTACKTOP - PGSIZE <= tf->tf_esp) &&
         (tf->tf_esp < UXSTACKTOP)) {
@@ -394,9 +387,18 @@ page_fault_handler(struct Trapframe *tf)
         sizeof(struct UTrapframe),
         (PTE_P | PTE_W | PTE_U));
 
-    memmove(stack, &user_trapframe, sizeof(struct UTrapframe));
-    curenv->env_tf.tf_eip = (uintptr_t) (curenv->env_pgfault_upcall);
-    curenv->env_tf.tf_esp = (uintptr_t) stack;
+    user_trapframe = (struct UTrapframe *) stack;
+
+    cprintf("fault_va: %p\n", fault_va);
+    user_trapframe->utf_fault_va = fault_va;
+    user_trapframe->utf_err = tf->tf_err;
+    user_trapframe->utf_regs = tf->tf_regs;
+    user_trapframe->utf_eip = tf->tf_eip;
+    user_trapframe->utf_eflags = tf->tf_eflags;
+    user_trapframe->utf_esp = tf->tf_esp;
+
+    tf->tf_eip = (uintptr_t) (curenv->env_pgfault_upcall);
+    tf->tf_esp = (uintptr_t) stack;
 
     env_run(curenv);
   }

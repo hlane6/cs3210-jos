@@ -66,24 +66,35 @@ _pgfault_upcall:
 	//
 	// LAB 4: Your code here.
 
-  movl %esp, %ecx       // save original exception stack
+  //movl %esp, %ecx       // save original exception stack
 
-  movl %esp, %eax
-  addl 40, %eax         // make stack point to trap-time eip 
+  //movl %esp, %eax
+  //addl 40, %eax         // make stack point to trap-time eip 
+
+  //movl %esp, %ebx
+  //add 48, %ebx          // make stack point to trap-time esp
+  //movl %ebx, %esp       // make stack trap-time stack
+
+  //pushl %eax            // push trap-time eip to trap-time stack
 
   movl %esp, %ebx
-  add 48, %ebx          // make stack point to trap-time esp
-  movl %ebx, %esp       // make stack trap-time stack
-
-  pushl %eax            // push trap-time eip to trap-time stack
+  movl 40(%esp), %eax
+  movl 48(%esp), %esp
+  pushl %eax
 
 
 	// Restore the trap-time registers.  After you do this, you
 	// can no longer modify any general-purpose registers.
 	// LAB 4: Your code here.
-  movl %ecx, %esp       // restore original exception stack
-  popl %eax             // ignore fault_va
-  popl %eax             // ignore err code
+  //movl %ecx, %esp       // restore original exception stack
+  //popl %eax             // ignore fault_va
+  //popl %eax             // ignore err code
+  //popal
+
+  movl %ebx, %esp
+  subl $4, 48(%esp)
+  popl %eax
+  popl %eax
   popal
 
 	// Restore eflags from the stack.  After you do this, you can

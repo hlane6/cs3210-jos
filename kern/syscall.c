@@ -153,6 +153,7 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
   }
 
   env->env_pgfault_upcall = func;
+  return 0;
 }
 
 // Allocate a page of memory and map it at 'va' with permission
@@ -370,31 +371,40 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
   // LAB 3: Your code here.
   switch (syscallno) {
     case SYS_cputs:
-      // void sys_cputs(const char *s, size_t len)
       sys_cputs((char *) a1, (size_t) a2);
       break;
+
     case SYS_cgetc:
-      // int sys_cgetc(void)
       return sys_cgetc();
+
     case SYS_getenvid:
-      //env_id sys_getenvid(void)
       return (int32_t) sys_getenvid();
+
     case SYS_env_destroy:
-      // int sys_env_destroy(envid_t envid)
       return sys_env_destroy((envid_t) a1);
+
     case SYS_page_alloc:
       return sys_page_alloc((envid_t) a1, (void *) a2, a3);
+
     case SYS_page_map:
       return sys_page_map((envid_t) a1, (void *) a2, (envid_t) a3, (void *) a4, a5);
+
     case SYS_page_unmap:
       return sys_page_unmap((envid_t) a1, (void *) a2);
+
     case SYS_exofork:
       return sys_exofork();
+
     case SYS_env_set_status:
       return sys_env_set_status((envid_t) a1, a2);      
+
+    case SYS_env_set_pgfault_upcall:
+      return sys_env_set_pgfault_upcall((envid_t) a1, (void *) a2);
+
     case SYS_yield:
       sys_yield;
       break;
+
     default:
       return -E_INVAL;
   }

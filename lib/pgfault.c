@@ -33,7 +33,7 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
         (void *) (UXSTACKTOP - PGSIZE),
         (PTE_P | PTE_U | PTE_W));
 
-    sys_env_set_pgfault_upcall(thisenv->env_id, handler);
+    sys_env_set_pgfault_upcall(thisenv->env_id, _pgfault_upcall);
   }
 
   // Save handler pointer for assembly to call.
