@@ -715,8 +715,6 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
   cur = (void *) ROUNDDOWN(va, PGSIZE);
   end = (void *) va + len;
 
-  cprintf("va: %p\n", va);
-
   for ( ; cur < end; cur += PGSIZE) {
     pagetable_entry = pgdir_walk(env->env_pgdir, cur, 0);
 
