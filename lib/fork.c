@@ -25,7 +25,7 @@ pgfault(struct UTrapframe *utf)
   //   (see <inc/memlayout.h>).
 
   // LAB 4: Your code here.
-  if (err == FEC_WR) {
+  if ( !(err & FEC_WR) ) {
     panic("user_pgfault: %e", err);
   }
 
@@ -78,7 +78,7 @@ duppage(envid_t envid, unsigned pn)
 
   // LAB 4: Your code here.
   // map page into child address space as copy on write
-  if ( (r = sys_page_map(0,
+  if ( (r = sys_page_map(sys_getenvid(),
       (void *) (pn * PGSIZE),
       envid,
       (void *) (pn * PGSIZE),
@@ -87,9 +87,9 @@ duppage(envid_t envid, unsigned pn)
   }
 
   // map page into own address space as copy on write
-  if ( (r = sys_page_map(0,
+  if ( (r = sys_page_map(sys_getenvid(),
       (void *) (pn * PGSIZE),
-      0,
+      sys_getenvid(),
       (void *) (pn * PGSIZE),
       (PTE_COW | PTE_U | PTE_P))) < 0) {
     panic("sys_page_map: %e", r);
@@ -133,7 +133,6 @@ fork(void)
   } else if (envid == 0) {
     // we are the child
     thisenv = &envs[ENVX(sys_getenvid())];
-    set_pgfault_handler(pgfault);
     return 0;
   }
 
@@ -170,8 +169,15 @@ fork(void)
       (void *) (PFTEMP),
       PGSIZE);
 
+  if ( (error = sys_page_unmap(sys_getenvid(), PFTEMP)) < 0) {
+    panic("sys_page_unmap: %e", error);
+  }
+
   // set pgfault_upcall for child
-  sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall);
+  if ( (error = sys_env_set_pgfault_upcall(envid,
+          thisenv->env_pgfault_upcall)) < 0) {
+    panic("sys_env_set_pgfault_upcall: %e", error);
+  }
 
   if ( (error = sys_env_set_status(envid, ENV_RUNNABLE)) < 0) {
     panic("sys_env_set_status: %e", error);

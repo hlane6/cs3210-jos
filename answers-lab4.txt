@@ -8,6 +8,10 @@ address at the wrong place since it thinks it is where the boot
 loader goes but it actually somewhere else
 
 2.)
+While not impossible, without multiple kernel stacks, the locking
+mechanism of the kernel would be much more difficult to implement.
+It would be more error prone and slower, so multiple kernel stacks
+helps in that regard.
 
 3.)
 Since e is in the kernel space, and every process has the same
