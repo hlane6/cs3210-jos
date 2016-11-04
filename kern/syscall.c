@@ -191,7 +191,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
   if (((uintptr_t) (va) >= UTOP) ||
       ((uintptr_t) (va) % PGSIZE != 0) ||                             // va not page aligned
       !(perm & (PTE_P | PTE_U)) ||                      // perm doesn't have PTE_U | PTE_P
-      (perm & ~(PTE_P | PTE_U | PTE_AVAIL | PTE_W))) {  // perm has stuff other than PTE_P | PTE_U | PTE_AVAIL | PTE_W
+      (perm & ~PTE_SYSCALL)) {  // perm has stuff other than PTE_P | PTE_U | PTE_AVAIL | PTE_W
     return -E_INVAL;
   }
 
@@ -250,8 +250,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
     return -E_INVAL;
   }
 
-  if ( !(perm & (PTE_P | PTE_U)) ||                      // perm doesn't have PTE_U | PTE_P
-      (perm & ~(PTE_P | PTE_U | PTE_AVAIL | PTE_W))) {  // perm has stuff other than PTE_P | PTE_U | PTE_AVAIL | PTE_W
+  if ( !(perm & (PTE_P | PTE_U)) || (perm & ~PTE_SYSCALL)) {
     return -E_INVAL;
   }
 
@@ -405,7 +404,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
       return sys_env_set_pgfault_upcall((envid_t) a1, (void *) a2);
 
     case SYS_yield:
-      sys_yield;
+      sys_yield();
       break;
 
     default:

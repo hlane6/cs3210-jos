@@ -11,8 +11,7 @@ void sched_halt(void);
 void
 sched_yield(void)
 {
-  struct Env *idle;
-  uint32_t count, env_index = 0;
+  uint32_t count, envid, cur_envid;
 
         // Implement simple round-robin scheduling.
         //
@@ -31,17 +30,14 @@ sched_yield(void)
 
   // LAB 4: Your code here.
   
-  idle = NULL;
-
-  if (thiscpu->cpu_env) {
-    env_index = (ENVX(thiscpu->cpu_env->env_id) + 1) % NENV;
-  }
+  envid = curenv ? ENVX(curenv->env_id) : NENV - 1;
+  cur_envid = (envid + 1) % NENV;
 
   for (count = 0; count < NENV; count++) {
-    env_index = (env_index + 1) % NENV;
-    if (envs[env_index].env_status == ENV_RUNNABLE) {
-      env_run(&envs[env_index]);
+    if (envs[cur_envid].env_status == ENV_RUNNABLE) {
+      env_run(&envs[cur_envid]);
     }
+    cur_envid = (cur_envid + 1) % NENV;
   }
 
   // No suitable Env found, so check if current is still running

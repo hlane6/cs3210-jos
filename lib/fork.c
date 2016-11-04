@@ -18,6 +18,9 @@ pgfault(struct UTrapframe *utf)
   uint32_t err = utf->utf_err;
   int r;
 
+  // DEBUG
+  cprintf("[ pgfault error ] [ %p %x ]\n", utf->utf_fault_va, err);
+
   // Check that the faulting access was (1) a write, and (2) to a
   // copy-on-write page.  If not, panic.
   // Hint:
@@ -40,23 +43,23 @@ pgfault(struct UTrapframe *utf)
   //   You should make three system calls.
 
   // LAB 4: Your code here.
+  addr = ROUNDDOWN(addr, PGSIZE);
+
   // map page to temporary location
-  if ( (r = sys_page_alloc(sys_getenvid(),
-     (void *) (PFTEMP),
-     (PTE_P | PTE_U | PTE_W))) < 0) {
+  if ( (r = sys_page_alloc(0, PFTEMP, (PTE_P | PTE_U | PTE_W))) < 0) {
     panic("sys_page_alloc: %e", r);
   }
 
   // copy data from old page to new page
-  memmove((void *) PFTEMP, ROUNDDOWN(addr, PGSIZE), PGSIZE);
+  memmove((void *) PFTEMP, addr, PGSIZE);
 
   // move new page to old page address
-  if ( (r = sys_page_map(sys_getenvid(),
-      (void *) (PFTEMP),
-      sys_getenvid(),
-      (void *) ROUNDDOWN(addr, PGSIZE),
-      (PTE_P | PTE_U | PTE_W))) < 0) {
+  if ( (r = sys_page_map(0, PFTEMP, 0, addr, (PTE_P | PTE_U | PTE_W))) < 0) {
     panic("sys_page_map: %e", r);
+  }
+
+  if ( (r = sys_page_unmap(0, PFTEMP)) < 0) {
+    panic("sys_page_unmap: %e", r);
   }
 }
 
@@ -77,24 +80,25 @@ duppage(envid_t envid, unsigned pn)
   int r;
 
   // LAB 4: Your code here.
-  // map page into child address space as copy on write
-  if ( (r = sys_page_map(sys_getenvid(),
-      (void *) (pn * PGSIZE),
-      envid,
-      (void *) (pn * PGSIZE),
-      (PTE_COW | PTE_U | PTE_P))) < 0) {
+  void *addr = (void *) (pn << PGSHIFT);
+  pte_t pte = uvpt[pn];
+
+  // if page isnt COW or W, map in as is
+  if ( !(pte & (PTE_W | PTE_COW)) ) {
+    if ( (r = sys_page_map(0, addr, envid, addr, (pte & PTE_SYSCALL))) < 0) {
+      panic("sys_page_map: %e", r);
+    }
+    return 0;
+  }
+
+  // otherwise copy into both as COW
+  if ( (r = sys_page_map(0, addr, envid, addr, (PTE_COW | PTE_U | PTE_P))) < 0) {
     panic("sys_page_map: %e", r);
   }
 
-  // map page into own address space as copy on write
-  if ( (r = sys_page_map(sys_getenvid(),
-      (void *) (pn * PGSIZE),
-      sys_getenvid(),
-      (void *) (pn * PGSIZE),
-      (PTE_COW | PTE_U | PTE_P))) < 0) {
+  if ( (r = sys_page_map(0, addr, 0, addr, (PTE_COW | PTE_U | PTE_P))) < 0) {
     panic("sys_page_map: %e", r);
   } 
-
   return 0;
 }
 
@@ -118,9 +122,11 @@ envid_t
 fork(void)
 {
   // LAB 4: Your code here.
-  envid_t envid;
-  uint32_t i, j, pn;
+  envid_t envid, parent_id;
+  uint32_t i, j, pn, end;
   int error;
+
+  parent_id = sys_getenvid();
 
   // set up page fault handler
   set_pgfault_handler(pgfault);
@@ -137,16 +143,19 @@ fork(void)
   }
 
   // we are the parent
-  for (i = 0; i < PDX(UTOP); i++) {
-    if (uvpd[i] & PTE_P) {
-      for (j = 0; j < NPTENTRIES; j++) {
-        pn = i * NPTENTRIES + j;
+  for (pn = PGNUM(UTEXT); pn < PGNUM(UTOP); pn += NPTENTRIES) {
+    if ( !(uvpd[pn >> (PDXSHIFT - PTXSHIFT)] & PTE_P) )
+      continue;
 
-        if ((pn != PGNUM(UXSTACKTOP - PGSIZE)) &&
-            (uvpt[pn] & PTE_P)) {
-          duppage(envid, pn);
-        }
-      }
+    end = pn + NPTENTRIES;
+    for ( ; pn < end; pn++) {
+      if (pn == PGNUM(UXSTACKTOP - 1))
+        continue;
+
+      if ( !(uvpt[pn] & (PTE_P | PTE_U)) )
+        continue;
+      
+      duppage(envid, pn);
     }
   }
 
@@ -155,22 +164,6 @@ fork(void)
       (void *) (UXSTACKTOP - PGSIZE),
       (PTE_P | PTE_U | PTE_W))) < 0) {
     panic("sys_page_alloc: %e", error);
-  }
-
-  if ( (error = sys_page_map(envid,
-      (void *) (UXSTACKTOP - PGSIZE),
-      sys_getenvid(),
-      (void *) (PFTEMP),
-      (PTE_P | PTE_U | PTE_W))) < 0) {
-    panic("sys_page_map: %e", error);
-  }
-
-  memmove((void *) (UXSTACKTOP - PGSIZE),
-      (void *) (PFTEMP),
-      PGSIZE);
-
-  if ( (error = sys_page_unmap(sys_getenvid(), PFTEMP)) < 0) {
-    panic("sys_page_unmap: %e", error);
   }
 
   // set pgfault_upcall for child
