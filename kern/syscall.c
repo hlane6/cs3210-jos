@@ -195,19 +195,18 @@ sys_page_alloc(envid_t envid, void *va, int perm)
     return -E_INVAL;
   }
 
-  if ( (error = envid2env(envid, &env, 1)) ) {
+  if ( (error = envid2env(envid, &env, 1)) )
+    return error;
+
+  if ( !(page = page_alloc(ALLOC_ZERO)) )
+    return -E_NO_MEM;
+
+  if ( (error = page_insert(env->env_pgdir, page, va, perm)) < 0) {
+    page_free(page);
     return error;
   }
 
-  if ( (page = page_alloc(ALLOC_ZERO)) ) {
-    if ( (error = page_insert(env->env_pgdir, page, va, perm)) < 0) {
-      page_free(page);
-      return error;
-    }
-    return 0;
-  }
-
-  return -E_NO_MEM;
+  return 0;
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space
@@ -343,6 +342,11 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
   // LAB 4: Your code here.
   panic("sys_ipc_try_send not implemented");
+  struct Env *env;
+  int error;
+
+  if ( (error = envid2env(envid, &env, 0)) < 0)
+    return -E_BAD_ENV;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -361,6 +365,18 @@ sys_ipc_recv(void *dstva)
 {
   // LAB 4: Your code here.
   panic("sys_ipc_recv not implemented");
+  if (PGOFF(dstva))
+    return -E_INVAL;
+
+  curenv->env_ipc_recving = 1;
+  curenv->env_status = ENV_NOT_RUNNABLE;
+
+  if ((uint32_t) dstva < UTOP)
+    curenv->env_ipc_dstva = dstva;
+
+  while (curenv->env_ipc_recving)
+    ;
+
   return 0;
 }
 

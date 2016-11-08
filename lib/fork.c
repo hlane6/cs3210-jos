@@ -18,9 +18,6 @@ pgfault(struct UTrapframe *utf)
   uint32_t err = utf->utf_err;
   int r;
 
-  // DEBUG
-  cprintf("[ pgfault error ] [ %p %x ]\n", utf->utf_fault_va, err);
-
   // Check that the faulting access was (1) a write, and (2) to a
   // copy-on-write page.  If not, panic.
   // Hint:
@@ -51,7 +48,7 @@ pgfault(struct UTrapframe *utf)
   }
 
   // copy data from old page to new page
-  memmove((void *) PFTEMP, addr, PGSIZE);
+  memmove(PFTEMP, addr, PGSIZE);
 
   // move new page to old page address
   if ( (r = sys_page_map(0, PFTEMP, 0, addr, (PTE_P | PTE_U | PTE_W))) < 0) {
@@ -99,6 +96,11 @@ duppage(envid_t envid, unsigned pn)
   if ( (r = sys_page_map(0, addr, 0, addr, (PTE_COW | PTE_U | PTE_P))) < 0) {
     panic("sys_page_map: %e", r);
   } 
+
+  if (uvpt[pn] & PTE_W) {
+    panic("nothing should be PTE_W");
+  }
+
   return 0;
 }
 
@@ -123,7 +125,7 @@ fork(void)
 {
   // LAB 4: Your code here.
   envid_t envid, parent_id;
-  uint32_t i, j, pn, end;
+  uint32_t i, pn, cur, end;
   int error;
 
   parent_id = sys_getenvid();
@@ -143,19 +145,20 @@ fork(void)
   }
 
   // we are the parent
-  for (pn = PGNUM(UTEXT); pn < PGNUM(UTOP); pn += NPTENTRIES) {
+  for (pn = 0; pn < PGNUM(UTOP); pn += NPTENTRIES) {
     if ( !(uvpd[pn >> (PDXSHIFT - PTXSHIFT)] & PTE_P) )
       continue;
 
-    end = pn + NPTENTRIES;
-    for ( ; pn < end; pn++) {
-      if (pn == PGNUM(UXSTACKTOP - 1))
+    cur = pn;
+    end = cur + NPTENTRIES;
+    for ( ; cur < end; cur++) {
+      if (cur == PGNUM(UXSTACKTOP - 1))
         continue;
 
-      if ( !(uvpt[pn] & (PTE_P | PTE_U)) )
+      if ( !(uvpt[cur] & (PTE_P | PTE_U)) )
         continue;
       
-      duppage(envid, pn);
+      duppage(envid, cur);
     }
   }
 

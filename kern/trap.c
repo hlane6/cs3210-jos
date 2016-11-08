@@ -272,6 +272,11 @@ trap_dispatch(struct Trapframe *tf)
           tf->tf_regs.reg_edi,
           tf->tf_regs.reg_esi);
       return;
+    /* Lab 4c
+    case (IRQ_OFFSET + IRQ_TIME):
+      sched_yield();
+      return;
+    */
   }
 
   // Handle spurious interrupts

@@ -548,19 +548,14 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
   // Fill this function in
   pte_t *pagetable_entry;
-  
-  if ( (pagetable_entry = pgdir_walk(pgdir, va, 1)) ) {
-    if (page2pa(pp) != PTE_ADDR(*pagetable_entry)) {
-      (pp->pp_ref)++;
-      page_remove(pgdir, va);
-      tlb_invalidate(pgdir, va);
-    }
-    
-    *pagetable_entry = (page2pa(pp) | perm | PTE_P);
-    return 0;
-  }
 
-  return -E_NO_MEM;
+  if ( !(pagetable_entry = pgdir_walk(pgdir, va, 1)) )
+    return -E_NO_MEM;
+
+  pp->pp_ref++;
+  page_remove(pgdir, va);
+  *pagetable_entry = PTE_ADDR(page2pa(pp)) | perm | PTE_P;
+  return 0;
 }
 
 //

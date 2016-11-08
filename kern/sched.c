@@ -29,7 +29,6 @@ sched_yield(void)
         // below to halt the cpu.
 
   // LAB 4: Your code here.
-  
   envid = curenv ? ENVX(curenv->env_id) : NENV - 1;
   cur_envid = (envid + 1) % NENV;
 
