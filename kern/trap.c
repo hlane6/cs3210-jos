@@ -33,6 +33,10 @@ struct Pseudodesc idt_pd = {
   sizeof(idt) - 1, (uint32_t)idt
 };
 
+/* to be done later
+void (*handlers[256]) (void);
+*/
+
 void t_divide();
 void t_debug();
 void t_nmi();
@@ -112,6 +116,13 @@ trap_init(void)
 
 
   // LAB 3: Your code here.
+  /* will try this later
+  uint32_t i;
+  for (i = 0; i < 256; i++) {
+    SETGATE(idt[i], 0, GD_KT, handlers[i], 0);
+  }
+  */
+
   SETGATE(idt[T_DIVIDE], 0, GD_KT, t_divide, 0);
   SETGATE(idt[T_DEBUG], 0, GD_KT, t_debug, 0);
   SETGATE(idt[T_NMI], 0, GD_KT, t_nmi, 0);
@@ -132,25 +143,22 @@ trap_init(void)
   SETGATE(idt[T_SIMDERR], 0, GD_KT, t_simderr, 0);
   SETGATE(idt[T_SYSCALL], 0, GD_KT, t_syscall, 3);
 
-  /* Lab 4c: uncomment when 4b works
-  SETGATE(idt[IRQ_OFFSET + 0], 0, GD_KT, irq_timer, 0);
-  SETGATE(idt[IRQ_OFFSET + 1], 0, GD_KT, irq_kbd, 0);
+  SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, irq_timer, 0);
+  SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, irq_kbd, 0);
   SETGATE(idt[IRQ_OFFSET + 2], 0, GD_KT, irq_2, 0);
   SETGATE(idt[IRQ_OFFSET + 3], 0, GD_KT, irq_3, 0);
-  SETGATE(idt[IRQ_OFFSET + 4], 0, GD_KT, irq_serial, 0);
+  SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, irq_serial, 0);
   SETGATE(idt[IRQ_OFFSET + 5], 0, GD_KT, irq_5, 0);
   SETGATE(idt[IRQ_OFFSET + 6], 0, GD_KT, irq_6, 0);
-  SETGATE(idt[IRQ_OFFSET + 7], 0, GD_KT, irq_spurious, 0);
+  SETGATE(idt[IRQ_OFFSET + IRQ_SPURIOUS], 0, GD_KT, irq_spurious, 0);
   SETGATE(idt[IRQ_OFFSET + 8], 0, GD_KT, irq_8, 0);
   SETGATE(idt[IRQ_OFFSET + 9], 0, GD_KT, irq_9, 0);
   SETGATE(idt[IRQ_OFFSET + 10], 0, GD_KT, irq_10, 0);
   SETGATE(idt[IRQ_OFFSET + 11], 0, GD_KT, irq_11, 0);
   SETGATE(idt[IRQ_OFFSET + 12], 0, GD_KT, irq_12, 0);
   SETGATE(idt[IRQ_OFFSET + 13], 0, GD_KT, irq_13, 0);
-  SETGATE(idt[IRQ_OFFSET + 14], 0, GD_KT, irq_ide, 0);
+  SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, irq_ide, 0);
   SETGATE(idt[IRQ_OFFSET + 15], 0, GD_KT, irq_15, 0);
-  */
-
 
   // Per-CPU setup
   trap_init_percpu();
@@ -253,7 +261,6 @@ trap_dispatch(struct Trapframe *tf)
 {
   // Handle processor exceptions.
   // LAB 3: Your code here.
-
   switch(tf->tf_trapno) {
     case T_PGFLT:
       page_fault_handler(tf);
@@ -272,11 +279,6 @@ trap_dispatch(struct Trapframe *tf)
           tf->tf_regs.reg_edi,
           tf->tf_regs.reg_esi);
       return;
-    /* Lab 4c
-    case (IRQ_OFFSET + IRQ_TIME):
-      sched_yield();
-      return;
-    */
   }
 
   // Handle spurious interrupts
@@ -291,6 +293,8 @@ trap_dispatch(struct Trapframe *tf)
   // Handle clock interrupts. Don't forget to acknowledge the
   // interrupt using lapic_eoi() before calling the scheduler!
   // LAB 4: Your code here.
+  lapic_eoi();
+  sched_yield();
 
   // Unexpected trap: The user process or the kernel has a bug.
   print_trapframe(tf);
