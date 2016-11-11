@@ -343,7 +343,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
   // LAB 4: Your code here.
   struct Env *env;
   struct PageInfo *page;
-  pte_t *pagetable_entry;
+  pte_t *pte;
   int error;
 
   if ( (error = envid2env(envid, &env, 0)) < 0)
@@ -360,13 +360,14 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
     if ( !(perm & (PTE_P | PTE_U)) || (perm & ~PTE_SYSCALL))
       return -E_INVAL;
 
-    if ( (page = page_lookup(curenv->env_pgdir, srcva, &pagetable_entry)) ) {
-      if ( !(*pagetable_entry & PTE_W) && (perm & PTE_W) )
-        return -E_INVAL;
+    if ( !(page = page_lookup(curenv->env_pgdir, srcva, &pte)) )
+      return -E_INVAL;
 
-      if ( (error = page_insert(env->env_pgdir, page, env->env_ipc_dstva, perm)) < 0)
-        return error;
-    }
+    if ( !(*pte & PTE_W) && (perm & PTE_W) )
+      return -E_INVAL;
+
+    if ( (error = page_insert(env->env_pgdir, page, env->env_ipc_dstva, perm)) < 0)
+      return error;
 
     env->env_ipc_perm = perm;
   } else {
