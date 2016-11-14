@@ -125,7 +125,7 @@ fork(void)
 {
   // LAB 4: Your code here.
   envid_t envid, parent_id;
-  uint32_t i, pn, cur, end;
+  uint32_t pn, cur, end;
   int error;
 
   parent_id = sys_getenvid();
@@ -140,7 +140,8 @@ fork(void)
     panic("sys_exofork: %e", envid);
   } else if (envid == 0) {
     // we are the child
-    thisenv = &envs[ENVX(sys_getenvid())];
+    // Commenting out for Lab 4 Challenge
+    //thisenv = &envs[ENVX(sys_getenvid())];
     return 0;
   }
 
@@ -183,9 +184,113 @@ fork(void)
 }
 
 // Challenge!
+//
+static void
+shared_pgfault(struct UTrapframe *utf)
+{
+  // just has fewer error checks
+  
+  void *addr = (void*)utf->utf_fault_va;
+  uint32_t err = utf->utf_err;
+  int r;
+
+  addr = ROUNDDOWN(addr, PGSIZE);
+
+  // map page to temporary location
+  if ( (r = sys_page_alloc(0, PFTEMP, (PTE_P | PTE_U | PTE_W))) < 0) {
+    panic("sys_page_alloc: %e", r);
+  }
+
+  // copy data from old page to new page
+  memmove(PFTEMP, addr, PGSIZE);
+
+  // move new page to old page address
+  if ( (r = sys_page_map(0, PFTEMP, 0, addr, (PTE_P | PTE_U | PTE_W))) < 0) {
+    panic("sys_page_map: %e", r);
+  }
+
+  if ( (r = sys_page_unmap(0, PFTEMP)) < 0) {
+    panic("sys_page_unmap: %e", r);
+  }
+}
+
+static int
+shared_duppage(envid_t envid, unsigned pn)
+{
+  int r;
+
+  void *addr = (void *) (pn << PGSHIFT);
+  pte_t pte = uvpt[pn];
+
+  // if page isnt COW or W, map in as is
+  if ( (r = sys_page_map(0, addr, envid, addr, (pte & PTE_SYSCALL))) < 0) {
+    panic("sys_page_map: %e", r);
+  }
+
+  return 0;
+}
+
 int
 sfork(void)
 {
-  panic("sfork not implemented");
-  return -E_INVAL;
+  envid_t envid, parent_id;
+  uint32_t pn, cur, end;
+  int error;
+
+  parent_id = sys_getenvid();
+
+  // set up page fault handler
+  set_pgfault_handler(shared_pgfault);
+
+  // create a child with sys_exofork
+  envid = sys_exofork();
+  
+  if (envid < 0) {
+    panic("sys_exofork: %e", envid);
+  } else if (envid == 0) {
+    // we are the child
+    //thisenv = &envs[ENVX(sys_getenvid())];
+    return 0;
+  }
+
+  // we are the parent
+  for (pn = 0; pn < PGNUM(UTOP); pn += NPTENTRIES) {
+    if ( !(uvpd[pn >> (PDXSHIFT - PTXSHIFT)] & PTE_P) )
+      continue;
+
+    cur = pn;
+    end = cur + NPTENTRIES;
+    for ( ; cur < end; cur++) {
+      if (cur == PGNUM(UXSTACKTOP - 1))
+        continue;
+
+      if ( !(uvpt[cur] & (PTE_P | PTE_U)) )
+        continue;
+
+      if (cur == PGNUM(USTACKTOP - 1)) {
+        duppage(envid, cur);
+      } else {
+        shared_duppage(envid, cur);
+      }
+    }
+  }
+
+  // allocate new page for child system
+  if ( (error = sys_page_alloc(envid,
+      (void *) (UXSTACKTOP - PGSIZE),
+      (PTE_P | PTE_U | PTE_W))) < 0) {
+    panic("sys_page_alloc: %e", error);
+  }
+
+  // set pgfault_upcall for child
+  if ( (error = sys_env_set_pgfault_upcall(envid,
+          thisenv->env_pgfault_upcall)) < 0) {
+    panic("sys_env_set_pgfault_upcall: %e", error);
+  }
+
+  if ( (error = sys_env_set_status(envid, ENV_RUNNABLE)) < 0) {
+    panic("sys_env_set_status: %e", error);
+  }
+
+  return envid;
 }

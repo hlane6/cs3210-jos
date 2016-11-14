@@ -56,6 +56,15 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 
   pg = (pg) ? ROUNDDOWN(pg, PGSIZE) : (void *) UTOP;
 
+  /*
+  if ( (error = sys_ipc_try_send(to_env, val, pg, perm)) < 0)
+    return error;
+
+  sys_yield();
+
+  return 0;
+  */
+
   while ( (error = sys_ipc_try_send(to_env, val, pg, perm)) < 0) {
     if (error != -E_IPC_NOT_RECV)
       panic("ipc_send: %e", error);

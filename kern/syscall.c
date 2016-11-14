@@ -349,6 +349,37 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
   if ( (error = envid2env(envid, &env, 0)) < 0)
     return -E_BAD_ENV;
 
+  /*
+  // LAB 4 CHALLENGE
+  // do some error checking so recv doesn't have to
+  if ((uint32_t) srcva < UTOP) {
+    if (PGOFF(srcva))
+      return -E_INVAL;
+
+    if ( !(perm & (PTE_P | PTE_U)) || (perm & ~PTE_SYSCALL))
+      return -E_INVAL;
+
+    if ( !(page = page_lookup(curenv->env_pgdir, srcva, &pte)) )
+      return -E_INVAL;
+
+    if ( !(*pte * PTE_W) && (perm * PTE_W) )
+      return -E_INVAL;
+  }
+
+  // If queue isn't full, add to queue
+  if ( (error = env_ipc_push(env, curenv->env_id, value, srcva, perm)) < 0) {
+    cprintf("queue full\n");
+    curenv->env_ipc_sending = 1;
+    curenv->env_status = ENV_NOT_RUNNABLE;
+    return error;
+  }
+
+  if (env->env_ipc_recving) {
+    env->env_ipc_recving = 0;
+    env->env_status = ENV_RUNNABLE;
+  }
+  */
+
   if ( !(env->env_ipc_recving) )
     return -E_IPC_NOT_RECV;
 
@@ -376,10 +407,10 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
     
 
   // update value and let reciever continue on their way
-  env->env_ipc_recving = 0;
-  env->env_ipc_from = curenv->env_id;
-  env->env_ipc_value = value;
-  env->env_status = ENV_RUNNABLE;
+    env->env_ipc_recving = 0;
+    env->env_ipc_from = curenv->env_id;
+    env->env_ipc_value = value;
+    env->env_status = ENV_RUNNABLE;
 
   return 0;
 }
@@ -399,8 +430,39 @@ static int
 sys_ipc_recv(void *dstva)
 {
   // LAB 4: Your code here.
-  if (PGOFF(dstva))
+  if ((uint32_t) dstva < UTOP && PGOFF(dstva))
     return -E_INVAL;
+
+  /*
+  struct Env *env_from;
+  struct EnvIpcNode *msg;
+  struct PageInfo *pg;
+  pte_t *pte;
+  int error;
+
+  if ( !(msg = env_ipc_pop(curenv)) ) {
+    curenv->env_ipc_recving = 1;
+    curenv->env_status = ENV_NOT_RUNNABLE;
+    return -E_IPC_NO_MSG;
+  }
+    // if had already waiting message, pop message will succeed and
+    // we can just continue
+  if ((uint32_t) (msg->ipc_srcva) < UTOP && (uint32_t) (dstva) < UTOP) {
+    // dont have to do much error checking as it was all done
+    // in ipc_send
+    if ( (error = envid2env(msg->ipc_from, &env_from, 0)) < 0)
+      return -E_BAD_ENV;
+
+    if ( !(pg = page_lookup(env_from->env_pgdir, msg->ipc_srcva, &pte)) )
+      return  -E_INVAL;
+
+    if ( (error = page_insert(curenv->env_pgdir, pg, dstva, msg->ipc_perm)) < 0)
+      return error; 
+  }
+
+  curenv->env_ipc_from = msg->ipc_from;
+  curenv->env_ipc_value = msg->ipc_value;
+  */
 
   curenv->env_ipc_recving = 1;
   curenv->env_status = ENV_NOT_RUNNABLE;
