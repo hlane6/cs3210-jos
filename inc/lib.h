@@ -28,7 +28,9 @@ void    umain(int argc, char **argv);
 
 // libmain.c or entry.S
 extern const char *binaryname;
-extern const volatile struct Env *thisenv;
+
+// Commenting out for Lab 4 Challenge
+//extern const volatile struct Env *thisenv;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
 
@@ -73,7 +75,7 @@ sys_exofork(void)
 }
 
 // ipc.c
-void    ipc_send(envid_t to_env, uint32_t value, void *pg, int perm);
+void ipc_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int32_t ipc_recv(envid_t *from_env_store, void *pg, int *perm_store);
 envid_t ipc_find_env(enum EnvType type);
 

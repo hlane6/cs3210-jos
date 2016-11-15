@@ -1,7 +1,6 @@
 // Fork a binary tree of processes and display their structure.
 
-#include <inc/lib.h>
-
+#include <inc/lib.h> 
 #define DEPTH 3
 
 void forktree(const char *cur);
@@ -15,7 +14,8 @@ forkchild(const char *cur, char branch)
     return;
 
   snprintf(nxt, DEPTH+1, "%s%c", cur, branch);
-  if (fork() == 0) {
+
+  if (sfork() == 0) {
     forktree(nxt);
     exit();
   }

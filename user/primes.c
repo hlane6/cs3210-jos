@@ -33,6 +33,8 @@ top:
     if (i % p)
       ipc_send(id, i, 0, 0);
   }
+
+  return 0;
 }
 
 void
