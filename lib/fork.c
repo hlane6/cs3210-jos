@@ -141,7 +141,7 @@ fork(void)
   } else if (envid == 0) {
     // we are the child
     // Commenting out for Lab 4 Challenge
-    //thisenv = &envs[ENVX(sys_getenvid())];
+    thisenv = &envs[ENVX(sys_getenvid())];
     return 0;
   }
 

@@ -30,7 +30,7 @@ void    umain(int argc, char **argv);
 extern const char *binaryname;
 
 // Commenting out for Lab 4 Challenge
-//extern const volatile struct Env *thisenv;
+extern const volatile struct Env *thisenv;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
 

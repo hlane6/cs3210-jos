@@ -29,7 +29,7 @@ typedef int32_t envid_t;
 #define NENV                    (1 << LOG2NENV)
 #define ENVX(envid)             ((envid) & (NENV - 1))
 
-#define thisenv               (&envs[ENVX(sys_getenvid())])
+//#define thisenv               (&envs[ENVX(sys_getenvid())])
 
 // Values of env_status in struct Env
 enum {
@@ -45,28 +45,6 @@ enum EnvType {
   ENV_TYPE_USER = 0,
   ENV_TYPE_FS,                  // File system server
 };
-
-/**
- * LAB 4 CHALLENGE
- * Single node to be used in
- * the Env Ipc Queue
-struct EnvIpcNode {
-  void *ipc_srcva;
-  uint32_t ipc_value;
-  envid_t ipc_from;
-  int ipc_perm;
-};
-
- * LAB 4 CHALLENGE
- * Ipc Queue used to handle 
- * inter-environement messaging
-struct EnvIpcQueue {
-  struct EnvIpcNode backing[ENV_IPC_MAX_QUEUE_SIZE];
-  uint32_t head;
-  uint32_t tail;
-  uint32_t size;
-};
-*/
 
 struct Env {
   struct Trapframe env_tf;              // Saved registers

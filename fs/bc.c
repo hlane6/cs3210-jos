@@ -48,11 +48,23 @@ bc_pgfault(struct UTrapframe *utf)
 	// the disk.
 	//
 	// LAB 5: you code here:
+  cprintf("entering bc_pgfault at %p\n", addr);
+  addr = ROUNDDOWN(addr, PGSIZE);
+
+  if ( (r = sys_page_alloc(thisenv->env_id, addr, PTE_P | PTE_U | PTE_W)) < 0)
+    panic("bc_pgfault: %e\n", r);
+
+  if ( (r = ide_read(blockno * BLKSECTS, addr, BLKSECTS)) < 0)
+    panic("bc_pgfault: %e\n", r);
+
+  struct Super *test = (struct Super *) addr; 
+  cprintf("testing... %p %p %p %p\n", test, test->s_magic, test->s_nblocks, test->s_root);
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
-	if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
-		panic("in bc_pgfault, sys_page_map: %e", r);
+  int perm = uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_D;
+  if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
+    panic("in bc_pgfault, sys_page_map: %e", r);
 
 	// Check that the block we read was allocated. (exercise for
 	// the reader: why do we do this *after* reading the block
@@ -77,7 +89,24 @@ flush_block(void *addr)
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
-	panic("flush_block not implemented");
+
+  // if not mapped, don't do anything
+  if (!va_is_mapped(addr) || !va_is_dirty(addr))
+    return;
+
+  int r;
+
+  struct Super *test = (struct Super *) addr;
+  cprintf("testing flush... %p %p %p %p\n", test, test->s_magic, test->s_nblocks, test->s_root);
+
+  cprintf("flushing block\n");
+
+  addr = ROUNDDOWN(addr, PGSIZE);
+  if ( (r = ide_write(blockno * BLKSECTS, addr, BLKSECTS)) < 0)
+    panic("flush_block: %e", r);
+
+  if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
+    panic("in bc_pgfault, sys_page_map: %e", r);
 }
 
 // Test that the block cache works, by smashing the superblock and
@@ -93,6 +122,7 @@ check_bc(void)
 	// smash it
 	strcpy(diskaddr(1), "OOPS!\n");
 	flush_block(diskaddr(1));
+
 	assert(va_is_mapped(diskaddr(1)));
 	assert(!va_is_dirty(diskaddr(1)));
 
