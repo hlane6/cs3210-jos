@@ -1,0 +1,38 @@
+Harry Lane
+Lab2
+
+1.) mystery_t -> uintptr_t
+
+2.)
+entry     base virtual address      points to
+1023      0xffc00000                pagetable for top 4mb of memory
+1022      0xff800000                pagetable for second top 4mb of memory
+.
+.
+.
+2         0x00800000                3rd pagetable for kernel
+1         0x00400000                2nd pagetable for kernel
+0         0x00000000                1st pagetable for memory
+
+3.)
+Because we haven't set the permission for the kerne memory to be 
+readable or writeable by the user
+
+4.)
+2 ^ 32 because pointers have 32 bits
+
+5.)
+1 page directory -> 1024
+1025 pages * 4 + 4KB
+2^10 + 4KB
+
+6.)
+Since we are in the early boot process, these instructions are in assembly
+so they don't have to go through the paging hardware to find what address
+they are at. 
+
+Challenge:
+The JOS was etended with these commands:
+  showmappings: shows page mappings for a range of addresses
+  perm: sets or removes permissions for a specific page
+  dump: prints out content of memory for a range of addresses
