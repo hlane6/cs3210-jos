@@ -48,7 +48,6 @@ bc_pgfault(struct UTrapframe *utf)
 	// the disk.
 	//
 	// LAB 5: you code here:
-  cprintf("entering bc_pgfault at %p from %x\n", addr, utf->utf_eip);
   addr = ROUNDDOWN(addr, PGSIZE);
 
   if ( (r = sys_page_alloc(0, addr, PTE_P | PTE_U | PTE_W)) < 0)
