@@ -56,9 +56,6 @@ bc_pgfault(struct UTrapframe *utf)
   if ( (r = ide_read(blockno * BLKSECTS, addr, BLKSECTS)) < 0)
     panic("bc_pgfault: %e\n", r);
 
-  struct Super *test = (struct Super *) addr;
-  cprintf("testing... %p %p %p %p\n", test, test->s_magic, test->s_nblocks, test->s_root);
-
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
   if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
@@ -93,11 +90,6 @@ flush_block(void *addr)
     return;
 
   int r;
-
-  struct Super *test = (struct Super *) addr;
-  cprintf("testing flush... %p %p %p %p\n", test, test->s_magic, test->s_nblocks, test->s_root);
-
-  cprintf("flushing block\n");
 
   addr = ROUNDDOWN(addr, PGSIZE);
   if ( (r = ide_write(blockno * BLKSECTS, addr, BLKSECTS)) < 0)

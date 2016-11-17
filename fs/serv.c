@@ -214,8 +214,6 @@ serve_read(envid_t envid, union Fsipc *ipc)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// Lab 5: Your code here:
-    //file_read(struct File *f, void *buf, size_t count, off_t offset)
-    //openfile_lookup(envid_t envid, uint32_t fileid, struct OpenFile **po)
     int r, count;
     struct OpenFile *openfile;
 
@@ -224,7 +222,7 @@ serve_read(envid_t envid, union Fsipc *ipc)
 
     if ( (count = file_read(openfile->o_file,
                     ret->ret_buf,
-                    ipc->read.req_n,
+                    MIN(ipc->read.req_n, PGSIZE),
                     openfile->o_fd->fd_offset)) < 0)
         return count;
 
@@ -245,7 +243,23 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
-	panic("serve_write not implemented");
+    int r, count;
+    struct OpenFile *openfile;
+
+    if ( (r = openfile_lookup(envid, req->req_fileid, &openfile)) < 0)
+        return r;
+
+    if ( (count = file_write(openfile->o_file,
+                    req->req_buf,
+                    req->req_n,
+                    openfile->o_fd->fd_offset)) < 0)
+        return count;
+
+    openfile->o_fd->fd_offset += count;
+
+    return count;
+
+
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the
