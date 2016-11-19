@@ -108,7 +108,6 @@ check_bc(void)
 
 	// back up super block
 	memmove(&backup, diskaddr(1), sizeof backup);
-  cprintf("checking bc... %p %p %p %p\n", &backup, (&backup)->s_magic, (&backup)->s_nblocks, (&backup)->s_root);
 
 	// smash it
 	strcpy(diskaddr(1), "OOPS!\n");

@@ -157,9 +157,13 @@ spawnl(const char *prog, const char *arg0, ...)
   va_list vl;
 
   va_start(vl, arg0);
-  while (va_arg(vl, void *) != NULL)
+  while (va_arg(vl, void *) != NULL) {
+      cprintf("vl: %p saying %s\n", vl, vl);
     argc++;
+  }
   va_end(vl);
+
+  cprintf("argc found %d\n", argc);
 
   // Now that we have the size of the args, do a second pass
   // and store the values in a VLA, which has the format of argv
@@ -276,6 +280,7 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
     fileoffset -= i;
   }
 
+
   for (i = 0; i < memsz; i += PGSIZE) {
     if (i >= filesz) {
       // allocate a blank page
@@ -302,6 +307,39 @@ static int
 copy_shared_pages(envid_t child)
 {
   // LAB 5: Your code here.
+  uint32_t pn, cur, end;
+  int r;
+  void *addr;
+
+  for (pn = 0; pn < PGNUM(UTOP); pn += NPTENTRIES) {
+      if (!(uvpd[pn >> (PDXSHIFT - PTXSHIFT)] & PTE_P) )
+          continue;
+
+      cur = pn;
+      end = cur + NPTENTRIES;
+      for ( ; cur < end; cur++) {
+          if (cur == PGNUM(UXSTACKTOP - 1))
+              continue;
+
+          // if not present or user, continue
+          if ( !(uvpt[cur] & (PTE_P | PTE_U)) )
+              continue;
+
+          // if not shared, dont copy, so continue
+          if ( !(uvpt[cur] & PTE_SHARE) )
+              continue;
+
+          cprintf("perm share present,user: %x %x %x\n", uvpt[cur],
+                  uvpt[cur] & PTE_SHARE, uvpt[cur] & (PTE_P | PTE_U));
+
+          addr = (void *) (pn << PGSHIFT);
+          if ( (r = sys_page_map(0, addr, child, addr, uvpt[cur] & PTE_SYSCALL)) < 0)
+              panic("copy_shared_pages - sys_page_map: %e", r);
+
+          cprintf("mapped page at %p\n", addr);
+      }
+  }
+
   return 0;
 }
 
