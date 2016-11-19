@@ -258,8 +258,6 @@ serve_write(envid_t envid, struct Fsreq_write *req)
     openfile->o_fd->fd_offset += count;
 
     return count;
-
-
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the

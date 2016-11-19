@@ -1,0 +1,37 @@
+Harry Lane
+Lab 4
+
+1.)
+Not necessary to disable A20 in mpentry.
+mpentry also has to use MPADDRPHYS because it will link the
+address at the wrong place since it thinks it is where the boot
+loader goes but it actually somewhere else
+
+2.)
+While not impossible, without multiple kernel stacks, the locking
+mechanism of the kernel would be much more difficult to implement.
+It would be more error prone and slower, so multiple kernel stacks
+helps in that regard.
+
+3.)
+Since e is in the kernel space, and every process has the same
+mappings for the kernel space, every page directory will map 
+to the same physical address for the variables in kernel space.
+
+4.)
+It's saved in the traphandler when the stack is made to look like
+a trapframe. Then when env_run happens, the trapframe values are 
+used to restore the environments registers.
+
+Challenge
+========================================
+I implemented shared fork for my challenge question. It was fairly
+simple. I added two new functions, shared_pgfault and shared_duppage.
+Shared_pgfault simply doesn't do as much error checking as the
+normal pgfault does. Shared_duppage just copies the mapping as it
+was in the parent environment. Lastly, thisenv was changed to be
+a macro equal to "&thisenvs[ENVX(sys_getenvid())]". This meant that
+certain lines of code had to be removed from some of the user programs
+that edited thisenv as it is no longer editable. While it is unfortunate
+that it involves a system call now, it seemed to be the simplest
+approach for now.

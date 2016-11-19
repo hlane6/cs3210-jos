@@ -157,13 +157,9 @@ spawnl(const char *prog, const char *arg0, ...)
   va_list vl;
 
   va_start(vl, arg0);
-  while (va_arg(vl, void *) != NULL) {
-      cprintf("vl: %p saying %s\n", vl, vl);
+  while (va_arg(vl, void *) != NULL)
     argc++;
-  }
   va_end(vl);
-
-  cprintf("argc found %d\n", argc);
 
   // Now that we have the size of the args, do a second pass
   // and store the values in a VLA, which has the format of argv
@@ -279,7 +275,6 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
     filesz += i;
     fileoffset -= i;
   }
-
 
   for (i = 0; i < memsz; i += PGSIZE) {
     if (i >= filesz) {
