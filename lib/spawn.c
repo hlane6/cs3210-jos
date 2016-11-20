@@ -110,6 +110,7 @@ spawn(const char *prog, const char **argv)
   if ((r = init_stack(child, argv, &child_tf.tf_esp)) < 0)
     return r;
 
+
   // Set up program segments as defined in ELF header.
   ph = (struct Proghdr*)(elf_buf + elf->e_phoff);
   for (i = 0; i < elf->e_phnum; i++, ph++) {
@@ -159,6 +160,7 @@ spawnl(const char *prog, const char *arg0, ...)
   va_start(vl, arg0);
   while (va_arg(vl, void *) != NULL)
     argc++;
+
   va_end(vl);
 
   // Now that we have the size of the args, do a second pass
@@ -324,14 +326,10 @@ copy_shared_pages(envid_t child)
           if ( !(uvpt[cur] & PTE_SHARE) )
               continue;
 
-          cprintf("perm share present,user: %x %x %x\n", uvpt[cur],
-                  uvpt[cur] & PTE_SHARE, uvpt[cur] & (PTE_P | PTE_U));
+          addr = (void *) (cur << PGSHIFT);
 
-          addr = (void *) (pn << PGSHIFT);
           if ( (r = sys_page_map(0, addr, child, addr, uvpt[cur] & PTE_SYSCALL)) < 0)
               panic("copy_shared_pages - sys_page_map: %e", r);
-
-          cprintf("mapped page at %p\n", addr);
       }
   }
 

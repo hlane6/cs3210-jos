@@ -148,14 +148,9 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
   if ( (error = envid2env(envid, &env, 1)) < 0)
       return error;
 
-  tf->tf_eflags |= FL_IF;
-  tf->tf_ds = GD_UD | 3;
-  tf->tf_es = GD_UD | 3;
-  tf->tf_ss = GD_UD | 3;
-  tf->tf_esp = USTACKTOP;
-  tf->tf_cs = GD_UT | 3;
-
   env->env_tf = *tf;
+  tf->tf_eflags |= FL_IF;
+
   return 0;
 }
 
