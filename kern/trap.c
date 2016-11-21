@@ -13,6 +13,7 @@
 #include <kern/picirq.h>
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
+#include <kern/time.h>
 
 // Lab 4
 #include <inc/string.h>
@@ -295,6 +296,12 @@ trap_dispatch(struct Trapframe *tf)
   // LAB 4: Your code here.
   lapic_eoi();
   sched_yield();
+
+  // Add time tick increment to clock interrupts.
+  // Be careful! In multiprocessors, clock interrupts are
+  // triggered on every CPU.
+  // LAB 6: Your code here.
+
 
   // Handle keyboard and serial interrupts.
   // LAB 5: Your code here.

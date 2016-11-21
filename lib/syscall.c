@@ -124,3 +124,8 @@ sys_page_set_accessed(envid_t envid, void *va, int accessed)
   return syscall(SYS_page_set_accessed, 1, envid, (uint32_t) va, accessed, 0, 0);
 }
 
+unsigned int
+sys_time_msec(void)
+{
+  return (unsigned int)syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
+}
