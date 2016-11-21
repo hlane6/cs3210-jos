@@ -17,6 +17,7 @@ enum {
   SYS_yield,
   SYS_ipc_try_send,
   SYS_ipc_recv,
+  SYS_page_set_accessed,        /* LAB 5 EVICTION */
   NSYSCALLS
 };
 

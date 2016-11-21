@@ -46,6 +46,72 @@ free_block(uint32_t blockno)
 	bitmap[blockno/32] |= 1<<(blockno%32);
 }
 
+static int
+handle_block(uint32_t blockno, int set_accessed)
+{
+  uint32_t pn;
+  void *addr;
+  int r;
+
+  if (!block_is_free(blockno)) {
+    addr = diskaddr(blockno);
+    pn = PGNUM(addr);
+
+    if ( !(uvpd[PDX(addr)] & PTE_P) )
+      return -1;
+
+    if ( !(uvpt[pn] & (PTE_P | PTE_U)) )
+      return -1;
+
+    if ( (uvpt[pn] & PTE_A) ) {
+      if ( (set_accessed) && (r = sys_page_set_accessed(0, addr, 0)) < 0)
+        panic("eviction: couldn't set accessed for %x\n", blockno);
+      return -1;
+    } else {
+      if (uvpt[pn] & PTE_D)
+        flush_block(addr);
+
+      if ( (r = sys_page_unmap(0, addr)) < 0)
+        panic("eviction error - sys_page_unmap: %e", r);
+
+      cprintf("evicting block %x\n", blockno);
+
+      return blockno;
+    }
+  }
+  return -1;
+}
+
+// Eviction policy
+// Look through blocks for first accessed, non dirty block
+// 
+// Better idea: least recently accessed
+// Loop through all blocks
+//  If block is accessed, mark as not
+//  If block is unaccessed, evict
+//
+// If get through all blocks without evicting
+//   Loop through all blocks again
+//    Evict first unaccessed block
+//
+// On success returns evicted blockno
+// On failure return < 0
+static int
+try_to_evict(void)
+{
+  uint32_t i, pn;
+  void *addr;
+  int r;
+  
+  // loop through all blocks
+  for (i = 2; i < super->s_nblocks; i++) {
+    if ( (r = handle_block(i, 1)) > 0)
+      return r;
+  }
+
+  return -1;
+}
+
 // Search the bitmap for a free block and allocate it.  When you
 // allocate a block, immediately flush the changed bitmap block
 // to disk.
@@ -63,6 +129,7 @@ alloc_block(void)
 
 	// LAB 5: Your code here.
     uint32_t i;
+    int r;
 
     for (i = 0; i < super->s_nblocks; i++) {
         if (block_is_free(i)) {
@@ -71,6 +138,8 @@ alloc_block(void)
             return i;
         }
     }
+
+    try_to_evict();
 
 	return -E_NO_DISK;
 }

@@ -1,0 +1,29 @@
+Harry Lane
+Lab 5 Answers
+
+1.)
+No, since the eflags is saved whenever yielding or 
+running environments, it will be properly stored
+or restored whenever changing environments.
+
+Challenge
+====================
+I implemented an eviction policy for the block cache.
+
+Most of the code for the actual eviction algorithm
+can be seen in fs/fs.c under the functions try_to_evict
+and handle_block.
+
+The algorithm is simple and uses the PTE_A flag in 
+the file system environments page tables. The idea is
+to evict the least recently accessed block. It loops
+through every block and tries to find a block that
+doesn't have its access flag marked. As it searches,
+it will mark blocks that have the access flag marked
+as unmarked. If it goes through once without finding
+a block, it will search once again, now guaranteed to
+find a block to evict.
+
+A system call was also added to remove the access flag
+for a given page since it would not be allowed with the 
+current form of sys_page_map.

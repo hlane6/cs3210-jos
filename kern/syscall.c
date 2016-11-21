@@ -320,6 +320,31 @@ sys_page_unmap(envid_t envid, void *va)
   return 0;
 }
 
+/* LAB 5 EVICTION */
+static int
+sys_page_set_accessed(envid_t envid, void *va, int accessed)
+{
+  struct Env *env;
+  struct PageInfo *page;
+  pte_t *pte;
+  int r, perm;
+
+  if ( (r = envid2env(envid, &env, 1)) < 0)
+    return r;
+
+  if ( (page = page_lookup(env->env_pgdir, va, &pte)) ) {
+    perm = (*pte & PTE_SYSCALL);
+
+    if (accessed) { perm | PTE_A; }
+    else { perm & ~PTE_A; }
+
+    if ( (r = page_insert(env->env_pgdir, page, va, perm)) < 0)
+      return r;
+  }
+
+  return 0;
+}
+
 // Try to send 'value' to the target env 'envid'.
 // If srcva < UTOP, then also send page currently mapped at 'srcva',
 // so that receiver gets a duplicate mapping of the same page.
@@ -369,37 +394,6 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 
   if ( (error = envid2env(envid, &env, 0)) < 0)
     return -E_BAD_ENV;
-
-  /*
-  // LAB 4 CHALLENGE
-  // do some error checking so recv doesn't have to
-  if ((uint32_t) srcva < UTOP) {
-    if (PGOFF(srcva))
-      return -E_INVAL;
-
-    if ( !(perm & (PTE_P | PTE_U)) || (perm & ~PTE_SYSCALL))
-      return -E_INVAL;
-
-    if ( !(page = page_lookup(curenv->env_pgdir, srcva, &pte)) )
-      return -E_INVAL;
-
-    if ( !(*pte * PTE_W) && (perm * PTE_W) )
-      return -E_INVAL;
-  }
-
-  // If queue isn't full, add to queue
-  if ( (error = env_ipc_push(env, curenv->env_id, value, srcva, perm)) < 0) {
-    cprintf("queue full\n");
-    curenv->env_ipc_sending = 1;
-    curenv->env_status = ENV_NOT_RUNNABLE;
-    return error;
-  }
-
-  if (env->env_ipc_recving) {
-    env->env_ipc_recving = 0;
-    env->env_status = ENV_RUNNABLE;
-  }
-  */
 
   if ( !(env->env_ipc_recving) )
     return -E_IPC_NOT_RECV;
@@ -453,37 +447,6 @@ sys_ipc_recv(void *dstva)
   // LAB 4: Your code here.
   if ((uint32_t) dstva < UTOP && PGOFF(dstva))
     return -E_INVAL;
-
-  /*
-  struct Env *env_from;
-  struct EnvIpcNode *msg;
-  struct PageInfo *pg;
-  pte_t *pte;
-  int error;
-
-  if ( !(msg = env_ipc_pop(curenv)) ) {
-    curenv->env_ipc_recving = 1;
-    curenv->env_status = ENV_NOT_RUNNABLE;
-    return -E_IPC_NO_MSG;
-  }
-    // if had already waiting message, pop message will succeed and
-    // we can just continue
-  if ((uint32_t) (msg->ipc_srcva) < UTOP && (uint32_t) (dstva) < UTOP) {
-    // dont have to do much error checking as it was all done
-    // in ipc_send
-    if ( (error = envid2env(msg->ipc_from, &env_from, 0)) < 0)
-      return -E_BAD_ENV;
-
-    if ( !(pg = page_lookup(env_from->env_pgdir, msg->ipc_srcva, &pte)) )
-      return  -E_INVAL;
-
-    if ( (error = page_insert(curenv->env_pgdir, pg, dstva, msg->ipc_perm)) < 0)
-      return error; 
-  }
-
-  curenv->env_ipc_from = msg->ipc_from;
-  curenv->env_ipc_value = msg->ipc_value;
-  */
 
   curenv->env_ipc_recving = 1;
   curenv->env_status = ENV_NOT_RUNNABLE;
@@ -545,6 +508,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
     case SYS_env_set_trapframe:
       return sys_env_set_trapframe((envid_t) a1, (struct Trapframe *) a2);
+
+    case SYS_page_set_accessed:
+      return sys_page_set_accessed((envid_t) a1, (void *) a2, (int) a2);
 
     default:
       return -E_INVAL;

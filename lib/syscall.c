@@ -117,3 +117,10 @@ sys_ipc_recv(void *dstva)
   return syscall(SYS_ipc_recv, 1, (uint32_t)dstva, 0, 0, 0, 0);
 }
 
+/* LAB 5 EVICTION */
+int
+sys_page_set_accessed(envid_t envid, void *va, int accessed)
+{
+  return syscall(SYS_page_set_accessed, 1, envid, (uint32_t) va, accessed, 0, 0);
+}
+
