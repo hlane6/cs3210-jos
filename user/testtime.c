@@ -12,6 +12,8 @@ sleep(int sec)
   if (end < now)
     panic("sleep: wrap");
 
+  uint32_t time;
+
   while (sys_time_msec() < end)
     sys_yield();
 }
