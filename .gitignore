@@ -18,3 +18,4 @@
 /out/
 .*.swp
 .DS_Store
+kern/e1000_hw.h
