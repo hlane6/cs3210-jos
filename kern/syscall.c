@@ -12,6 +12,7 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 #include <kern/time.h>
+#include <kern/e1000.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -466,6 +467,20 @@ sys_time_msec(void)
   return time_msec();
 }
 
+// Attempt to transmit a message
+// Return <0 on error
+//   Full queue
+//   Too large of a packet
+//   Invalid packet address
+// Return 0 on success
+static int
+sys_transmit(void *pkt, uint32_t length) {
+  if ((uint32_t) pkt >= UTOP)
+    return -E_INVAL;
+
+  return e1000_transmit(pkt, length);
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -523,6 +538,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
     case SYS_time_msec:
       return sys_time_msec();
+
+    case SYS_transmit:
+      return sys_transmit((void *) a1, a2);
 
     default:
       return -E_INVAL;

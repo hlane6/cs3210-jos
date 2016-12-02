@@ -18,7 +18,7 @@
 #define E1000_TDH      (0x03810 >> 2)  /* TX Descriptor Head - RW */
 #define E1000_TDT      (0x03818 >> 2)  /* TX Descripotr Tail - RW */
 #define E1000_TIDV     (0x03820 >> 2)  /* TX Interrupt Delay Value - RW */
-#define E1000_TXDCTL   (0x03828 >> 2)  /* TX Descriptor Control - RW */
+#define E1000_TCTL     (0x00400 >> 2)  /* TX Control - RW */
 #define E1000_TIPG     (0x00410 >> 2)  /* TX Inter-packet gap -RW */
 
 /* Register Bit Masks */
@@ -33,20 +33,22 @@
 #define E1000_STATUS_FD         0x00000001      /* Full duplex.0=half,1=full */
 #define E1000_STATUS_LU         0x00000002      /* Link up.0=no,1=link */
 
-/* Tramsmit Descriptor */
-#define E1000_TXD_STAT_DD   0x00000001      /* Descriptor Done */
+/* Tramsmit Control */
 #define E1000_TCTL_EN       0x00000002      /* enable tx */
 #define E1000_TCTL_PSP      0x00000008      /* pad short packets */
 #define E1000_TCTL_CT       0x00000ff0      /* collision threshold */
 #define E1000_TCTL_COLD     0x003ff000      /* collision distance */
-#define E1000_TXD_CMD_RS    0x08000000      /* Report Status */
-#define E1000_TXD_CMD_EOP   0x01000000      /* End of Packet */
+
+/* Transmit Descriptor Flags */
+#define E1000_TXD_STAT_DD   0x00000001      /* Descriptor Done */
+#define E1000_TXD_CMD_RS    0x00000008      /* Report Status */
+#define E1000_TXD_CMD_EOP   0x00000001      /* End of Packet */
 
 /* Transmit Descriptor Control Defaults */
-#define E1000_TCTL_CT_OFFSET        (4)
-#define E1000_TCTL_COLD_OFFSET      (12)
-#define E1000_TCTL_CT_DEFAULT       (E1000_TCTL_CT & (0x10 << E1000_TCTL_CT_OFFSET))
-#define E1000_TCTL_COLD_DEFAULT     (E1000_TCTL_COLD & (0x40 << E1000_TCTL_COLD_OFFSET))
+#define E1000_TCTL_CT_OFFSET        (0x4)
+#define E1000_TCTL_COLD_OFFSET      (0x12)
+#define E1000_TCTL_CT_DEFAULT       (0x10 << E1000_TCTL_CT_OFFSET)
+#define E1000_TCTL_COLD_DEFAULT     (0x40 << E1000_TCTL_COLD_OFFSET)
 
 /* Inter-packet Gap Defaults */
 #define E1000_IPGT  (0xA)

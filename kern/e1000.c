@@ -54,25 +54,20 @@ e1000_attach(struct pci_func *pcif) {
   e1000[E1000_TDH] = 0x0;
   e1000[E1000_TDT] = 0x0;
 
-  e1000[E1000_TXDCTL] |= E1000_TCTL_EN;
-  e1000[E1000_TXDCTL] |= E1000_TCTL_PSP;
-  e1000[E1000_TXDCTL] &= ~E1000_TCTL_CT;
-  e1000[E1000_TXDCTL] |= E1000_TCTL_CT_DEFAULT;
-  e1000[E1000_TXDCTL] &= ~E1000_TCTL_COLD;
-  e1000[E1000_TXDCTL] |= E1000_TCTL_COLD_DEFAULT;
+  e1000[E1000_TCTL] |= E1000_TCTL_EN;
+  e1000[E1000_TCTL] |= E1000_TCTL_PSP;
+  e1000[E1000_TCTL] &= ~E1000_TCTL_CT;
+  e1000[E1000_TCTL] |= E1000_TCTL_CT_DEFAULT;
+  e1000[E1000_TCTL] &= ~E1000_TCTL_COLD;
+  e1000[E1000_TCTL] |= E1000_TCTL_COLD_DEFAULT;
 
-  e1000[E1000_TIPG] = 0xa;
   e1000[E1000_TIPG] |= (E1000_IPGT | E1000_IPGR1 | E1000_IPGR2);
 
-  cprintf("[ bal tdlen tdh tdxctl tipg ]\n");
-  cprintf("[ %x %x %x %x %x %x ]\n", e1000[E1000_TDBAL],
-      e1000[E1000_TDLEN],
-      e1000[E1000_TDH],
-      e1000[E1000_TXDCTL],
-      (E1000_IPGT | E1000_IPGR1 | E1000_IPGR2));
 
   uint8_t pkt[] = {1, 2, 0xa, 4, 5};
-  e1000_transmit(pkt, 5);
+  for (i = 0; i < 10; i++) {
+    e1000_transmit(pkt, 5);
+  }
 
   return 0;
 }
@@ -92,12 +87,12 @@ e1000_transmit(void *packet, uint32_t len) {
     return -1;
 
   // Get current tail
-  uint32_t new_tail_index = (e1000[E1000_TDT] + 1) % E1000_TX_DESC;
-  struct tx_desc *new_tail = &tx_desc_array[new_tail_index]; 
+  uint32_t tx_indx = e1000[E1000_TDT];
+  struct tx_desc *tail = &tx_desc_array[e1000[E1000_TDT]]; 
 
   // Check if next descriptor is free by checking if dd is set in
   // the status field of the descriptor
-  if ( !(new_tail->status & E1000_TXD_STAT_DD) )
+  if ( !(tx_desc_array[tx_indx].status & E1000_TXD_STAT_DD) )
     return -1;
   
   // Transmit a packet
@@ -105,16 +100,14 @@ e1000_transmit(void *packet, uint32_t len) {
   //     a.) Copy packet data into descriptor's buffer
   //     b.) Set RS bit in command field of transmit descriptor
   // 2.) Update tail of queue (TDT register)
-  memmove(tx_desc_bufs[new_tail_index].buf, packet, len);
-  new_tail->length = len;
+  memmove(tx_desc_bufs[tx_indx].buf, packet, len);
+  tx_desc_array[tx_indx].length = len;
 
-  new_tail->cmd |= E1000_TXD_CMD_RS;    
-  new_tail->status &= ~E1000_TXD_STAT_DD;
-  new_tail->status |= E1000_TXD_CMD_EOP; 
+  tx_desc_array[tx_indx].status &= ~E1000_TXD_STAT_DD;
+  tx_desc_array[tx_indx].cmd |= E1000_TXD_CMD_RS;    
+  tx_desc_array[tx_indx].cmd |= E1000_TXD_CMD_EOP; 
 
-  cprintf("prev tail: %d\n", e1000[E1000_TDT]);
-  e1000[E1000_TDT] = new_tail_index;
-  cprintf("new tail: %d\n", e1000[E1000_TDT]);
+  e1000[E1000_TDT] = (e1000[E1000_TDT] + 1) % E1000_TX_DESC;
 
   return 0;
 }
