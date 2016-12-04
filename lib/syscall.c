@@ -129,3 +129,9 @@ sys_time_msec(void)
 {
   return (unsigned int)syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
 }
+
+int
+sys_transmit(void *pkt, uint32_t len)
+{
+  return syscall(SYS_transmit, 0, (uint32_t) pkt, len, 0, 0, 0);
+}
