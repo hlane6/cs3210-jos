@@ -82,9 +82,9 @@ e1000_rx_init() {
   e1000[E1000_RDLEN] = sizeof(rx_descs);
 
   e1000[E1000_RDH] = 0x0;
-  e1000[E1000_RDT] = E1000_RX_DESC;
+  e1000[E1000_RDT] = E1000_RX_DESC - 1;
 
-  e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC);
+  e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC | E1000_RCTL_BAM);
 }
 
 int
@@ -119,6 +119,7 @@ e1000_transmit(void *packet, uint32_t len) {
 
   // Get current tail
   uint32_t tx_indx = e1000[E1000_TDT];
+  cprintf("attempting to send of length %d\n", len);
 
   // Check if next descriptor is free by checking if dd is set in
   // the status field of the descriptor
@@ -154,18 +155,19 @@ e1000_receive(void *buf) {
   // 3.) Unset DD
   // 4.) Update tail
   //
-  uint32_t rx_indx = e1000[E1000_RDT];
-  cprintf("receving\n");
-
-  if ( !(rx_descs[rx_indx].status & E1000_RXD_STAT_DD) )
+  uint32_t length, tail;
+  tail = (e1000[E1000_RDT] + 1) % E1000_RX_DESC;
+  //cprintf("[head tail] [ %d %d ]\n", e1000[E1000_RDH], e1000[E1000_RDT]);
+  
+  if ( !(rx_descs[tail].status & (E1000_RXD_STAT_DD | E1000_RXD_STAT_EOP)) )
     return -1;
-  cprintf("still receving\n");
 
-  memmove(buf, rx_desc_bufs[rx_indx], rx_descs[rx_indx].length);
-  rx_descs[rx_indx].status &= ~(E1000_RXD_STAT_DD | E1000_RXD_STAT_EOP);
+  length = MIN(rx_descs[tail].length, E1000_MAX_PACKET_SIZE);
+  memmove(buf, rx_desc_bufs[tail], length);
+  rx_descs[tail].status &= ~(E1000_RXD_STAT_DD | E1000_RXD_STAT_EOP);
 
-  e1000[E1000_RDT] = (e1000[E1000_RDT] + 1) % E1000_RX_DESC;
+  e1000[E1000_RDT] = tail;
 
-  return 0;
+  return length;
 
 }

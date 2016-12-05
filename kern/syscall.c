@@ -474,21 +474,23 @@ sys_time_msec(void)
 //   Invalid packet address
 // Return 0 on success
 static int
-sys_transmit(void *pkt, uint32_t length) {
-  if ((uint32_t) pkt >= UTOP)
+sys_net_transmit(void *pkt, uint32_t length) {
+  if ( ((uint32_t) pkt >= UTOP) ||
+      (length >= E1000_MAX_PACKET_SIZE) ) {
     return -E_INVAL;
-
-  cprintf("tranmitting packet\n");
-
+  }
   return e1000_transmit(pkt, length);
 }
 
+// Attempt to receive a packet
+// Return amount of bytes received on success
+// Returns <0 on error
 static int
-sys_receive(void *buf) {
-  if ((uint32_t) buf >= UTOP) {
+sys_net_receive(void *buf, uint32_t length) {
+  if ( ((uint32_t) buf >= UTOP) ||
+      (length >= E1000_MAX_PACKET_SIZE) ) {
     return -E_INVAL;
   }
-
   return e1000_receive(buf);
 }
 
@@ -550,11 +552,11 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     case SYS_time_msec:
       return sys_time_msec();
 
-    case SYS_transmit:
-      return sys_transmit((void *) a1, a2);
+    case SYS_net_transmit:
+      return sys_net_transmit((void *) a1, a2);
 
-    case SYS_receive:
-      return sys_receive((void *) a1);
+    case SYS_net_receive:
+      return sys_net_receive((void *) a1, a2);
 
     default:
       return -E_INVAL;

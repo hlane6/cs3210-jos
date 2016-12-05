@@ -18,15 +18,15 @@ input(envid_t ns_envid)
   uint8_t buf[2048];
 
   while (1) {
-    while (sys_receive(buf) < 0) {
+    while (sys_net_receive(buf) < 0) {
       sys_yield();
     }
 
     while (sys_page_alloc(0, &nsipcbuf, PTE_U | PTE_W | PTE_P) < 0)
       ;
 
-    nsipcbuf.pkt.jp_len = 2048;
-    memmove(nsipcbuf.pkt.jp_data, buf, 2048);
+    nsipcbuf.pkt.jp_len = 1517;
+    memmove(nsipcbuf.pkt.jp_data, buf, 1517);
 
     while (sys_ipc_try_send(ns_envid, NSREQ_INPUT, &nsipcbuf, PTE_P | PTE_U | PTE_W) < 0)
       ;

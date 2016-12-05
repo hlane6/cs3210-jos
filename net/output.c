@@ -18,7 +18,8 @@ output(envid_t ns_envid)
       continue;
     }
 
-    while (sys_transmit(nsipcbuf.pkt.jp_data, nsipcbuf.pkt.jp_len) < 0)
+    cprintf("attempting to transmit\n");
+    while (sys_net_transmit(nsipcbuf.pkt.jp_data, nsipcbuf.pkt.jp_len) < 0)
       ;
   }
 

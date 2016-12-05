@@ -131,13 +131,13 @@ sys_time_msec(void)
 }
 
 int
-sys_transmit(void *pkt, uint32_t len)
+sys_net_transmit(void *pkt, uint32_t len)
 {
-  return syscall(SYS_transmit, 0, (uint32_t) pkt, len, 0, 0, 0);
+  return syscall(SYS_net_transmit, 0, (uint32_t) pkt, len, 0, 0, 0);
 }
 
 int
-sys_receive(void *buf)
+sys_net_receive(void *buf)
 {
-  return syscall(SYS_receive, 0, (uint32_t) buf, 0, 0, 0, 0);
+  return syscall(SYS_net_receive, 0, (uint32_t) buf, 0, 0, 0, 0);
 }

@@ -62,8 +62,8 @@ int     sys_page_unmap(envid_t env, void *pg);
 int     sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int     sys_ipc_recv(void *rcv_pg);
 unsigned int sys_time_msec(void);
-int     sys_transmit(void *, uint32_t);
-int      sys_receive(void *buf);
+int     sys_net_transmit(void *, uint32_t);
+int     sys_net_receive(void *buf);
 
 /* LAB 5 EVICTION */
 int     sys_page_set_accessed(envid_t envid, void *addr, int accessed);

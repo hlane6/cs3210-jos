@@ -3,6 +3,7 @@
 #include <kern/pci.h>
 
 /* General Constants */
+#define E1000_MAX_PACKET_SIZE (1518)
 #define E1000_TX_PACKET_SIZE (1518)
 #define E1000_TX_DESC (64)
 #define E1000_RX_PACKET_SIZE (2048)
