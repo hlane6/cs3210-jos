@@ -478,6 +478,8 @@ sys_transmit(void *pkt, uint32_t length) {
   if ((uint32_t) pkt >= UTOP)
     return -E_INVAL;
 
+  cprintf("tranmitting packet\n");
+
   return e1000_transmit(pkt, length);
 }
 

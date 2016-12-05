@@ -73,28 +73,18 @@ e1000_rx_init() {
     rx_descs[i].addr = PADDR(&rx_desc_bufs[i]);
   }
 
-  e1000[E1000_RAL] = 0x52540012;
-  e1000[E1000_RAH] = (0x3456 | E1000_RAH_AV);
+  e1000[E1000_RAL] = 0x12005452;
+  e1000[E1000_RAH] = (0x5634 | E1000_RAH_AV);
 
   e1000[E1000_RDBAL] = PADDR(rx_descs);
   e1000[E1000_RDBAH] = 0x0;
 
-  e1000[E1000_RDLEN] = sizeof(struct rx_desc) * E1000_RX_DESC;
+  e1000[E1000_RDLEN] = sizeof(rx_descs);
 
   e1000[E1000_RDH] = 0x0;
-  e1000[E1000_RDT] = 0x0;
+  e1000[E1000_RDT] = E1000_RX_DESC;
 
-  e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC | E1000_RCTL_SBP | E1000_RCTL_BAM | E1000_RCTL_UPE | E1000_RCTL_MPE);
-
-  cprintf("[ RAL ]   : %08x\n", e1000[E1000_RAL]);
-  cprintf("[ RAH ]   : %08x\n", e1000[E1000_RAH]);
-  cprintf("[ RDBAL ] : %08x\n", e1000[E1000_RDBAL]);
-  cprintf("[ RDBAH ] : %08x\n", e1000[E1000_RDBAL]);
-  cprintf("[ RDLEN ] : %08x\n", e1000[E1000_RDLEN]);
-  cprintf("[ RDH ]   : %08x\n", e1000[E1000_RDH]);
-  cprintf("[ RDT ]   : %08x\n", e1000[E1000_RDT]);
-  cprintf("[ RCTL ]  : %08x\n", e1000[E1000_RCTL]);
-
+  e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC);
 }
 
 int
@@ -104,14 +94,11 @@ e1000_attach(struct pci_func *pcif) {
   pci_func_enable(pcif);
 
   // Map into memory
-  cprintf("size: %d\n", pcif->reg_size[0]);
   e1000 = mmio_map_region(pcif->reg_base[0], pcif->reg_size[0]);
   assert(e1000[E1000_STATUS] == 0x80080783);
 
   e1000_tx_init();
   e1000_rx_init();
-
-  cprintf("test %x\n", e1000[E1000_RCTL]);
 
   return 0;
 }
@@ -167,17 +154,17 @@ e1000_receive(void *buf) {
   // 3.) Unset DD
   // 4.) Update tail
   //
-  cprintf("recv status: %x\n", e1000[E1000_RCTL]);
-  
-  uint32_t rx_indx = e1000[E1000_TDT];
+  uint32_t rx_indx = e1000[E1000_RDT];
+  cprintf("receving\n");
 
   if ( !(rx_descs[rx_indx].status & E1000_RXD_STAT_DD) )
     return -1;
+  cprintf("still receving\n");
 
   memmove(buf, rx_desc_bufs[rx_indx], rx_descs[rx_indx].length);
   rx_descs[rx_indx].status &= ~(E1000_RXD_STAT_DD | E1000_RXD_STAT_EOP);
 
-  e1000[E1000_RDT] = (e1000[E1000_TDT] + 1) % E1000_RX_DESC;
+  e1000[E1000_RDT] = (e1000[E1000_RDT] + 1) % E1000_RX_DESC;
 
   return 0;
 
