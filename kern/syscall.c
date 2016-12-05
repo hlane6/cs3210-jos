@@ -481,6 +481,15 @@ sys_transmit(void *pkt, uint32_t length) {
   return e1000_transmit(pkt, length);
 }
 
+static int
+sys_receive(void *buf) {
+  if ((uint32_t) buf >= UTOP) {
+    return -E_INVAL;
+  }
+
+  return e1000_receive(buf);
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -541,6 +550,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
     case SYS_transmit:
       return sys_transmit((void *) a1, a2);
+
+    case SYS_receive:
+      return sys_receive((void *) a1);
 
     default:
       return -E_INVAL;

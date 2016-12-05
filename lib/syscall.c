@@ -135,3 +135,9 @@ sys_transmit(void *pkt, uint32_t len)
 {
   return syscall(SYS_transmit, 0, (uint32_t) pkt, len, 0, 0, 0);
 }
+
+int
+sys_receive(void *buf)
+{
+  return syscall(SYS_receive, 0, (uint32_t) buf, 0, 0, 0, 0);
+}
