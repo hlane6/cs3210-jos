@@ -18,12 +18,6 @@ output(envid_t ns_envid)
       continue;
     }
 
-    cprintf("\n");
-    int i;
-    for (i = 0; i < nsipcbuf.pkt.jp_len; i++) {
-      cprintf("%x ", nsipcbuf.pkt.jp_data[i]);
-    }
-    cprintf("\n");
     while (sys_transmit(nsipcbuf.pkt.jp_data, nsipcbuf.pkt.jp_len) < 0)
       ;
   }

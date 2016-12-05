@@ -84,7 +84,17 @@ e1000_rx_init() {
   e1000[E1000_RDH] = 0x0;
   e1000[E1000_RDT] = 0x0;
 
-  e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC);
+  e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC | E1000_RCTL_SBP | E1000_RCTL_BAM | E1000_RCTL_UPE | E1000_RCTL_MPE);
+
+  cprintf("[ RAL ]   : %08x\n", e1000[E1000_RAL]);
+  cprintf("[ RAH ]   : %08x\n", e1000[E1000_RAH]);
+  cprintf("[ RDBAL ] : %08x\n", e1000[E1000_RDBAL]);
+  cprintf("[ RDBAH ] : %08x\n", e1000[E1000_RDBAL]);
+  cprintf("[ RDLEN ] : %08x\n", e1000[E1000_RDLEN]);
+  cprintf("[ RDH ]   : %08x\n", e1000[E1000_RDH]);
+  cprintf("[ RDT ]   : %08x\n", e1000[E1000_RDT]);
+  cprintf("[ RCTL ]  : %08x\n", e1000[E1000_RCTL]);
+
 }
 
 int
@@ -94,6 +104,7 @@ e1000_attach(struct pci_func *pcif) {
   pci_func_enable(pcif);
 
   // Map into memory
+  cprintf("size: %d\n", pcif->reg_size[0]);
   e1000 = mmio_map_region(pcif->reg_base[0], pcif->reg_size[0]);
   assert(e1000[E1000_STATUS] == 0x80080783);
 
@@ -101,19 +112,6 @@ e1000_attach(struct pci_func *pcif) {
   e1000_rx_init();
 
   cprintf("test %x\n", e1000[E1000_RCTL]);
-  /*
-  char data[] = {1,2,3,4,5};
-  e1000_transmit(data, 5);
-
-  char new_data[2048];
-  if (e1000_receive(new_data) < 0) {
-    cprintf("nothing was received\n");
-  }
-
-  for (i = 0; i < 5; i++) {
-    cprintf("received %d\n", new_data[i]);
-  }
-  */
 
   return 0;
 }

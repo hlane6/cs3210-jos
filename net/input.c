@@ -17,8 +17,7 @@ input(envid_t ns_envid)
   
   uint8_t buf[1028];
 
-  /*
-  while (1) {
+  while (0) {
     while (sys_receive(buf) < 0) {
       cprintf("error receiving\n");
       sys_yield();
@@ -33,6 +32,5 @@ input(envid_t ns_envid)
     while (sys_ipc_try_send(ns_envid, NSREQ_INPUT, &nsipcbuf, PTE_P | PTE_U | PTE_W) < 0)
       ;
   }
-  */
   
 }
