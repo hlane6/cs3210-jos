@@ -12,6 +12,7 @@
 #include <kern/kdebug.h>
 #include <kern/trap.h>
 #include <kern/pmap.h>
+#include <kern/spinlock.h>
 
 /* lab 3 challenge */
 #include <kern/env.h>
@@ -274,6 +275,7 @@ mon_continue(int argc, char **argv, struct Trapframe *tf)
 {
   if (tf) {
     tf->tf_eflags = tf->tf_eflags & ~(1 << 8);
+    unlock_kernel();
     env_pop_tf(tf);
   } else {
     cprintf("Error: no currently running environment\n");

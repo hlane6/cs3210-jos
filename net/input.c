@@ -16,20 +16,23 @@ input(envid_t ns_envid)
   //
   
   uint8_t buf[2048];
+  int len;
 
   while (1) {
-    while (sys_net_receive(buf) < 0) {
+    while ( (len = sys_net_receive(buf)) < 0) {
       sys_yield();
     }
 
-    while (sys_page_alloc(0, &nsipcbuf, PTE_U | PTE_W | PTE_P) < 0)
-      ;
+    while (sys_page_alloc(0, &nsipcbuf, PTE_U | PTE_W | PTE_P) < 0) {
+      cprintf("could not sys_page_alloc\n");
+    }
 
-    nsipcbuf.pkt.jp_len = 1517;
-    memmove(nsipcbuf.pkt.jp_data, buf, 1517);
+    nsipcbuf.pkt.jp_len = len;
+    memmove(nsipcbuf.pkt.jp_data, buf, len);
 
-    while (sys_ipc_try_send(ns_envid, NSREQ_INPUT, &nsipcbuf, PTE_P | PTE_U | PTE_W) < 0)
-      ;
+    while (sys_ipc_try_send(ns_envid, NSREQ_INPUT, &nsipcbuf, PTE_P | PTE_U | PTE_W) < 0) {
+      cprintf("could not send to ipc\n");
+    }
   }
   
 }
