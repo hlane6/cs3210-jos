@@ -22,6 +22,7 @@
 #include <inc/args.h>
 #include <inc/malloc.h>
 #include <inc/ns.h>
+#include <kern/e1000.h>
 
 #define USED(x)         (void)(x)
 
@@ -64,6 +65,7 @@ int     sys_ipc_recv(void *rcv_pg);
 unsigned int sys_time_msec(void);
 int     sys_net_transmit(void *, uint32_t);
 int     sys_net_receive(void *buf);
+int     sys_get_mac(struct MAC *mac);
 
 /* LAB 5 EVICTION */
 int     sys_page_set_accessed(envid_t envid, void *addr, int accessed);

@@ -141,3 +141,9 @@ sys_net_receive(void *buf)
 {
   return syscall(SYS_net_receive, 0, (uint32_t) buf, 0, 0, 0, 0);
 }
+
+int
+sys_get_mac(struct MAC *mac)
+{
+  return syscall(SYS_get_mac, 0, (uint32_t) mac, 0, 0, 0, 0);
+}

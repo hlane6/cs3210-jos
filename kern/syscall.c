@@ -494,6 +494,14 @@ sys_net_receive(void *buf, uint32_t length) {
   return e1000_receive(buf);
 }
 
+static int
+sys_get_mac(struct MAC *mac)
+{
+  mac->high = e1000[E1000_RAH];
+  mac->low = e1000[E1000_RAL];
+  return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -557,6 +565,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
     case SYS_net_receive:
       return sys_net_receive((void *) a1, a2);
+
+    case SYS_get_mac:
+      return sys_get_mac((struct MAC *) a1);
 
     default:
       return -E_INVAL;

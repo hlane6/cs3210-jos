@@ -21,6 +21,7 @@ enum {
   SYS_time_msec,
   SYS_net_transmit,
   SYS_net_receive,
+  SYS_get_mac,
   NSYSCALLS
 };
 

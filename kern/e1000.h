@@ -118,10 +118,27 @@ struct rx_desc {
   uint16_t special;
 } __attribute__((packed));
 
+/* ******************** EERD ******************** */
+
+/* EERD Register */
+#define E1000_EERD     (0x00014 >> 2)  /* EEPROM Read - RW */
+
+/* EERD Flags */
+#define E1000_EEPROM_RW_REG_DATA   16   /* Offset to data in EEPROM read/write registers */
+#define E1000_EEPROM_RW_REG_DONE   0x10 /* Offset to READ/WRITE done bit */
+#define E1000_EEPROM_RW_REG_START  1    /* First bit for telling part to start operation */
+#define E1000_EEPROM_RW_ADDR_SHIFT 8    /* Shift to the address bits */
+
 volatile uint32_t *e1000;
 
 int e1000_attach(struct pci_func *);
 int e1000_transmit(void *, uint32_t);
 int e1000_receive(void *);
+
+/* Structure for MAC Address */
+struct MAC {
+  uint16_t high;
+  uint32_t low;
+};
 
 #endif	// JOS_KERN_E1000_H

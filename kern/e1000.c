@@ -12,6 +12,19 @@ uint8_t tx_desc_bufs[E1000_TX_DESC][E1000_TX_PACKET_SIZE] __attribute__((aligned
 struct rx_desc rx_descs[E1000_RX_DESC] __attribute__((aligned (16)));
 uint8_t rx_desc_bufs[E1000_RX_DESC][E1000_RX_PACKET_SIZE] __attribute__((aligned (16)));
 
+uint16_t e1000_read_eeprom(uint8_t addr)
+{
+  // Read EERD
+  //   Write addr to EERD.ADDR
+  //   Write 1 to EERD.START_READ
+  //   Wait until EERD.DONE
+  //   Data will be in EERD.DATA
+
+  e1000[E1000_EERD] = (E1000_EEPROM_RW_REG_START | (addr << E1000_EEPROM_RW_ADDR_SHIFT));    
+  while ( !(e1000[E1000_EERD] & E1000_EEPROM_RW_REG_DONE) ); 
+  return e1000[E1000_EERD] >> E1000_EEPROM_RW_REG_DATA; 
+}
+
 // Initialize e1000 transmitting functionality
 //
 // 1.) Fill TDBAL / TBBAH with to base address of transmit
@@ -39,10 +52,8 @@ e1000_tx_init() {
   }
 
   e1000[E1000_TDBAL] = PADDR(tx_descs);
-  e1000[E1000_TDBAH] = 0x0;
+  e1000[E1000_TDH] = e1000[E1000_TDT] = e1000[E1000_TDBAH] = 0x0;
   e1000[E1000_TDLEN] = sizeof(struct tx_desc) * E1000_TX_DESC;
-  e1000[E1000_TDH] = 0x0;
-  e1000[E1000_TDT] = 0x0;
   e1000[E1000_TCTL] &= (~E1000_TCTL_CT | ~E1000_TCTL_COLD);
   e1000[E1000_TCTL] |= (E1000_TCTL_EN | E1000_TCTL_PSP | E1000_TCTL_CT_DEFAULT | E1000_TCTL_COLD_DEFAULT);
   e1000[E1000_TIPG] = (E1000_IPGT | E1000_IPGR1 | E1000_IPGR2);
@@ -72,18 +83,13 @@ e1000_rx_init() {
   for (i = 0; i < E1000_RX_DESC; i++) {
     rx_descs[i].addr = PADDR(&rx_desc_bufs[i]);
   }
-
-  e1000[E1000_RAL] = 0x12005452;
-  e1000[E1000_RAH] = (0x5634 | E1000_RAH_AV);
-
+  
+  e1000[E1000_RAL] = (e1000_read_eeprom(0x1) << 16) | (e1000_read_eeprom(0x0));
+  e1000[E1000_RAH] = (e1000_read_eeprom(0x2) | E1000_RAH_AV);
   e1000[E1000_RDBAL] = PADDR(rx_descs);
-  e1000[E1000_RDBAH] = 0x0;
-
+  e1000[E1000_RDH] = e1000[E1000_RDBAH] = 0x0;
   e1000[E1000_RDLEN] = sizeof(rx_descs);
-
-  e1000[E1000_RDH] = 0x0;
   e1000[E1000_RDT] = E1000_RX_DESC - 1;
-
   e1000[E1000_RCTL] = (E1000_RCTL_EN | E1000_RCTL_SECRC | E1000_RCTL_BAM);
 }
 
@@ -119,18 +125,10 @@ e1000_transmit(void *packet, uint32_t len) {
 
   // Get current tail
   uint32_t tx_indx = e1000[E1000_TDT];
-  cprintf("attempting to send of length %d\n", len);
 
-  // Check if next descriptor is free by checking if dd is set in
-  // the status field of the descriptor
   if ( !(tx_descs[tx_indx].status & E1000_TXD_STAT_DD) )
     return -1;
   
-  // Transmit a packet
-  // 1.) Add to tail of trasmit queue
-  //     a.) Copy packet data into descriptor's buffer
-  //     b.) Set RS bit in command field of transmit descriptor
-  // 2.) Update tail of queue (TDT register)
   memmove(tx_desc_bufs[tx_indx], packet, len);
   tx_descs[tx_indx].length = len;
 

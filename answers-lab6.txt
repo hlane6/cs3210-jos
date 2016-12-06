@@ -1,0 +1,41 @@
+Harry Lane
+Lab 6 Answers
+
+1.)
+The transmit function adds a descriptor to the end
+of the queue. It gets the current tail, stores the
+data into the correct buffer, sets the length, status,
+and command of the descriptor and finally updates the
+hardware tail pointer. If the queue is full, meaning
+the current tail's descriptors status isn't done, it
+simply returns a negative number indictating to the
+user that they must try again later.
+
+2.)
+The receive queue gets a descriptor right after the
+current tail. In an proper queue, this will be the 
+packet that the hardware has most recently written.
+It then gets the length, copies over the data, and
+sets the status so that the descriptor is free to be
+used by the hardware again. For simplicity, a negative
+value will be returned if the queue is empty indicating
+that the user will have to try again later.
+
+3.)
+"This file came from JOS."
+"Cheesy web page!"
+
+4.)
+Roughly 6 hours for Part A and 10 hours for Part B.
+So around 16 hours total I'd say.
+
+Challenge:
+I used EEPROM to get the MAC address from the hardware.
+All it took was adding a couple more constants in the 
+header file, adding a function to read a specific
+address in the EEPROM, adding a MAC structure, and 
+adding a system call for accessing it. Reading from
+the EEPROM is as easy as setting a register the address
+you'd like to read, telling it to start reading, polling
+until a done flag is set, and then reading the data out.
+

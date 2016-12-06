@@ -19,4 +19,3 @@ void input(envid_t ns_envid);
 
 /* output.c */
 void output(envid_t ns_envid);
-
